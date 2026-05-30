@@ -8,10 +8,10 @@ import {
 
 const citizenLinks = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/shops', label: 'Shops', icon: Store },
   { to: '/allocation', label: 'Allocation', icon: FileText },
   { to: '/receipts', label: 'Receipts', icon: QrCode },
-  { to: '/complaints/new', label: 'Report', icon: AlertTriangle },
+  { to: '/complaints/track', label: 'Complaints', icon: AlertTriangle },
+  { to: '/shops', label: 'Shops', icon: Store },
 ];
 
 const dealerLinks = [

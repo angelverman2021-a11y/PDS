@@ -37,7 +37,7 @@ export default function Footer() {
         <div className="border-t border-gray-700 mt-6 pt-4 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
           <span>© 2025 PDS Transparency Platform. Government of India Initiative.</span>
           <span className="flex items-center gap-1 mt-2 md:mt-0">
-            Built with <Heart size={12} className="text-red-400" /> for 800M citizens
+            Made with <Heart size={12} className="text-red-400 fill-red-400" /> by Kushagra and Angel
           </span>
         </div>
       </div>

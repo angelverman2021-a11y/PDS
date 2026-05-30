@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { ROLES } from '../constants';
 import Button from '../components/common/Button';
 import { Truck, User, Store, ShieldCheck } from 'lucide-react';

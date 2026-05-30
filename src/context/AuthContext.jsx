@@ -1,7 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { useState } from 'react';
 import { MOCK_USERS } from '../constants';
-
-const AuthContext = createContext(null);
+import { AuthContext } from './AuthContextCore';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -25,10 +24,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
-  return ctx;
 }

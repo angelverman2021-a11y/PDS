@@ -7,7 +7,6 @@ import {
   MOCK_USERS, MOCK_SHOPS, MOCK_BENEFICIARIES,
   MOCK_DISTRIBUTION_LOGS,
 } from '../../constants';
-import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import toast from 'react-hot-toast';
@@ -16,6 +15,14 @@ const TABS = [
   { id: 'stock',        label: 'Stock Update',      icon: Package },
   { id: 'distribution', label: 'Distribution',      icon: Users },
   { id: 'logs',         label: 'Logs',              icon: ClipboardList },
+];
+
+const QR_CELLS = [
+  true, true, true, false, true,
+  true, false, true, false, false,
+  true, true, false, true, true,
+  false, true, false, true, false,
+  true, false, true, true, true,
 ];
 
 // ── Stock Update Tab ─────────────────────────────────────
@@ -63,7 +70,7 @@ function StockUpdateTab({ shop }) {
           <p className={`text-xs mt-0.5 ${confirmed ? 'text-green-600' : 'text-amber-600'}`}>
             {confirmed
               ? `Updated today · ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
-              : 'Last delivery: 10 July 2025 · Enter quantities received today'
+              : `Last delivery: ${shop?.lastDelivery ?? '10 July 2025'} · Enter quantities received today`
             }
           </p>
         </div>
@@ -293,7 +300,7 @@ function DistributionTab() {
                 {Array.from({ length: 25 }).map((_, i) => (
                   <div
                     key={i}
-                    className={`w-5 h-5 rounded-sm ${Math.random() > 0.4 ? 'bg-white' : 'bg-gray-900'}`}
+                    className={`w-5 h-5 rounded-sm ${QR_CELLS[i] ? 'bg-white' : 'bg-gray-900'}`}
                   />
                 ))}
               </div>

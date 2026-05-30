@@ -42,7 +42,6 @@ const STATUS_LABELS = {
 // ── Complaint Row ─────────────────────────────────────────
 function ComplaintRow({ complaint, onStatusChange }) {
   const [expanded, setExpanded]   = useState(false);
-  const [dropdown, setDropdown]   = useState(false);
   const [note, setNote]           = useState(complaint.resolutionNote || '');
   const [saving, setSaving]       = useState(false);
 
@@ -57,7 +56,6 @@ function ComplaintRow({ complaint, onStatusChange }) {
     setTimeout(() => {
       onStatusChange(complaint.id, newStatus, note);
       setSaving(false);
-      setDropdown(false);
       toast.success(`Complaint ${newStatus === 'resolved' ? 'resolved' : 'status updated'}`);
     }, 700);
   };

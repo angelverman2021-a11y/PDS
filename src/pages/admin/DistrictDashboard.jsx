@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
   Store, Users, AlertTriangle, TrendingUp,
   ShieldAlert, CheckCircle, XCircle, BarChart2,
-  RefreshCw, Download, MapPin,
+  RefreshCw, Download, MapPin, Landmark,
+  ClipboardList, Database, BadgeCheck,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -17,6 +18,26 @@ import StatusIndicator from '../../components/common/StatusIndicator';
 import toast from 'react-hot-toast';
 
 const PIE_COLORS = ['#dc2626', '#d97706', '#f59e0b', '#6b7280'];
+
+const authorityDetails = [
+  { label: 'Nodal Authority', value: 'District Food Supply Officer, Pune' },
+  { label: 'Emergency Contact', value: '020-2456-1180' },
+  { label: 'Escalation Desk', value: 'Additional Collector, Public Distribution' },
+  { label: 'Public Hearing', value: 'Every Tuesday, 11 AM - 1 PM' },
+];
+
+const complianceChecks = [
+  'ePOS, stock register, and digital receipt reconciliation completed',
+  'High-risk FPS shops assigned for field inspection',
+  'Citizen complaint acknowledgement SLA monitored',
+  'Monthly transparency report ready for public disclosure',
+];
+
+const districtInspectionRecords = [
+  { id: 'INS-2025-0714-03', shop: 'Mahatma Gandhi FPS', date: '14 Jul 2025', officer: 'Field Officer Desai', result: 'Mismatch verified', nextStep: 'License review scheduled' },
+  { id: 'INS-2025-0712-01', shop: 'Shivaji Ration Centre', date: '12 Jul 2025', officer: 'Supply Inspector Kulkarni', result: 'Notice-board delay', nextStep: 'Warning issued' },
+  { id: 'INS-2025-0710-02', shop: 'Ram Ration Store', date: '10 Jul 2025', officer: 'Field Officer Patil', result: 'Records matched', nextStep: 'No action required' },
+];
 
 // ── KPI Card ─────────────────────────────────────────────
 function KpiCard({ icon: Icon, label, value, sub, color }) {
@@ -183,6 +204,47 @@ export default function DistrictDashboard() {
 
       <div className="max-w-6xl mx-auto px-4 mt-6 space-y-6">
 
+        <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-6">
+          <Card>
+            <div className="flex items-center gap-2 mb-4">
+              <Landmark size={18} className="text-purple-700" />
+              <h3 className="font-semibold text-gray-800">Authority & Sync Status</h3>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {authorityDetails.map(({ label, value }) => (
+                <div key={label} className="rounded-xl bg-purple-50 border border-purple-100 p-3">
+                  <p className="text-xs text-purple-700 font-semibold">{label}</p>
+                  <p className="text-sm font-bold text-gray-900 mt-1">{value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 rounded-xl bg-gray-50 border border-gray-100 p-3 text-sm">
+              <div className="flex items-center gap-2 font-semibold text-gray-800">
+                <Database size={16} className="text-purple-700" />
+                Last verified sync: 15 July 2025, 10:35 AM IST
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Sources: ePOS transactions, FPS stock register, citizen QR verification, complaint records.
+              </p>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex items-center gap-2 mb-4">
+              <BadgeCheck size={18} className="text-green-700" />
+              <h3 className="font-semibold text-gray-800">Compliance Readiness</h3>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {complianceChecks.map((item) => (
+                <div key={item} className="flex items-start gap-2 rounded-xl bg-green-50 border border-green-100 p-3 text-sm text-gray-700">
+                  <CheckCircle size={16} className="text-green-700 shrink-0 mt-0.5" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
         {/* ── KPI Cards ── */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <KpiCard icon={Store}       label="Total Shops"        value={d.totalShops}           sub="In district"          color="blue"   />
@@ -338,6 +400,40 @@ export default function DistrictDashboard() {
                         View Details →
                       </button>
                     </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center gap-2 mb-5">
+            <ClipboardList size={18} className="text-purple-700" />
+            <h3 className="font-semibold text-gray-800">Inspection Records</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left text-xs font-semibold text-gray-500 pb-3 pr-4">Inspection ID</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 pb-3 px-4">Shop</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 pb-3 px-4">Officer</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 pb-3 px-4">Result</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 pb-3 pl-4">Next Step</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {districtInspectionRecords.map((record) => (
+                  <tr key={record.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-3 pr-4">
+                      <p className="font-semibold text-gray-800">{record.id}</p>
+                      <p className="text-xs text-gray-400">{record.date}</p>
+                    </td>
+                    <td className="py-3 px-4 font-medium text-gray-800">{record.shop}</td>
+                    <td className="py-3 px-4 text-gray-600">{record.officer}</td>
+                    <td className="py-3 px-4 text-gray-600">{record.result}</td>
+                    <td className="py-3 pl-4 text-gray-600">{record.nextStep}</td>
                   </tr>
                 ))}
               </tbody>

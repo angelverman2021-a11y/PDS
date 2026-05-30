@@ -4,7 +4,7 @@ import {
   Package, CheckCircle, Clock, TrendingUp,
   ArrowRight, ShieldCheck,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { MOCK_ALLOCATION, MOCK_RECEIPTS, MOCK_COMPLAINTS, MOCK_SHOPS } from '../../constants';
 import Badge from '../../components/common/Badge';
 import Card from '../../components/common/Card';

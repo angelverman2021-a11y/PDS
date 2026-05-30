@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, Package, AlertTriangle, ArrowRight, Store } from 'lucide-react';
+import { Search, MapPin, AlertTriangle, ArrowRight, Store } from 'lucide-react';
 import { MOCK_SHOPS, STOCK_STATUS } from '../../constants';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
@@ -17,12 +17,11 @@ export default function ShopFinder() {
   const [pincode, setPincode] = useState('');
   const [filter, setFilter]   = useState('all');
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(true);
 
   const handleSearch = (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => { setLoading(false); setSearched(true); }, 600);
+    setTimeout(() => { setLoading(false); }, 600);
   };
 
   const shops = MOCK_SHOPS.filter(s => {

@@ -4,7 +4,6 @@ import {
   Store, QrCode, Flag, Package,
 } from 'lucide-react';
 import { MOCK_SHOPS, STOCK_STATUS } from '../../constants';
-import Badge from '../../components/common/Badge';
 
 const statusConfig = {
   [STOCK_STATUS.AVAILABLE]:    { label: 'Stock Available',  color: 'bg-green-500',  ring: 'ring-green-200',  text: 'text-green-700',  bg: 'bg-green-50'  },

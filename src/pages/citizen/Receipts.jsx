@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { QrCode, Download, ShieldCheck, Package, Calendar, Store } from 'lucide-react';
 import { MOCK_RECEIPTS } from '../../constants';
-import Badge from '../../components/common/Badge';
 import toast from 'react-hot-toast';
 
 export default function Receipts() {

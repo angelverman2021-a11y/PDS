@@ -6,7 +6,7 @@ This is a prototype built for demonstration and academic/project evaluation. It 
 
 ## Live Demo
 
-- View the deployed application at: https://pds-sage.vercel.app/
+- View the deployed application at: https://pds-platform.vercel.app/
 
 ## Judge Evaluation Guide
 

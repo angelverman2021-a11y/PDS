@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BENEFICIARY_REGISTRY, MOCK_USERS } from '../constants';
 import { AuthContext } from './AuthContextCore';
 import { VERIFY_STATE } from './authConstants';
+import { normalizePhoneNumber, sendOtp, verifyOtp } from '../services/otpService';
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000;
 const MAX_OTP_TRIES = 3;
@@ -14,21 +15,27 @@ export function AuthProvider({ children }) {
   const [otpSentAt, setOtpSentAt] = useState(null);
   const [otpAttempts, setOtpAttempts] = useState(0);
 
-  const validateRationCard = (rationCardNo) => {
+  const validateCitizenCredentials = ({ rationCardNo, phone }) => {
     return new Promise((resolve) => {
       setLoading(true);
-      setTimeout(() => {
+      setTimeout(async () => {
         setLoading(false);
         const beneficiary = BENEFICIARY_REGISTRY[rationCardNo.trim().toUpperCase()];
-        if (!beneficiary) {
+        if (!beneficiary || normalizePhoneNumber(beneficiary.phone) !== normalizePhoneNumber(phone)) {
           setVerifyState(VERIFY_STATE.INVALID_CARD);
-          resolve({ success: false, reason: 'not_found' });
+          resolve({ success: false, reason: 'invalid_credentials' });
         } else {
+          const delivery = await sendOtp({ phone: beneficiary.phone });
+          if (!delivery.ok) {
+            setVerifyState(VERIFY_STATE.INVALID_OTP);
+            resolve({ success: false, reason: delivery.error });
+            return;
+          }
           setPending(beneficiary);
           setOtpSentAt(Date.now());
           setOtpAttempts(0);
           setVerifyState(VERIFY_STATE.OTP_SENT);
-          resolve({ success: true, maskedPhone: beneficiary.maskedPhone });
+          resolve({ success: true, maskedPhone: beneficiary.maskedPhone, debugOtp: delivery.otp });
         }
       }, 800);
     });
@@ -57,7 +64,9 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        if (otp.trim() !== pendingBeneficiary.otp) {
+        const verification = await verifyOtp({ phone: pendingBeneficiary.phone, otp });
+
+        if (!verification.ok) {
           const newAttempts = otpAttempts + 1;
           setOtpAttempts(newAttempts);
           if (newAttempts >= MAX_OTP_TRIES) {
@@ -76,10 +85,10 @@ export function AuthProvider({ children }) {
     });
   };
 
-  const login = (role) => {
+  const login = (userObject) => {
     setLoading(true);
     setTimeout(() => {
-      setUser(MOCK_USERS[role]);
+      setUser(userObject);
       setLoading(false);
     }, 800);
   };
@@ -107,7 +116,7 @@ export function AuthProvider({ children }) {
       pendingBeneficiary,
       otpAttempts,
       otpSentAt,
-      validateRationCard,
+      validateCitizenCredentials,
       validateOTP,
       login,
       logout,

@@ -43,13 +43,35 @@ export default function Allocation() {
   const entitlements = computeAllocation(category, familySize);
   const collectedMap = MOCK_COLLECTED[citizenId] || {};
 
-  // ── Build rows ────────────────────────────────────────────
-  const rows = entitlements.map(product => {
-    const col    = collectedMap[product.id]?.collected ?? 0;
-    const status = getItemStatus(product.entitledQty, col);
-    const pct    = Math.min(100, Math.round((col / product.entitledQty) * 100));
-    return { ...product, collected: col, status, pct };
-  });
+  const [rows, setRows] = useState([]);
+
+  useEffect(() => {
+    const initialRows = entitlements.map(product => {
+      const collected = collectedMap[product.id]?.collected ?? 0;
+      const remaining = Math.max(0, product.entitledQty - collected);
+      const status = getItemStatus(product.entitledQty, collected);
+      const pct = Math.min(100, Math.round((collected / product.entitledQty) * 100));
+      return {
+        ...product,
+        collected,
+        remaining,
+        status,
+        pct,
+      };
+    });
+    setRows(initialRows);
+  }, [category, familySize, citizenId]);
+
+  const handleRemainingChange = (id, nextValue) => {
+    setRows(current => current.map(row => {
+      if (row.id !== id) return row;
+      const remaining = Math.max(0, Math.min(row.entitledQty, Number(nextValue) || 0));
+      const collected = Math.max(0, row.entitledQty - remaining);
+      const status = getItemStatus(row.entitledQty, collected);
+      const pct = Math.min(100, Math.round((collected / row.entitledQty) * 100));
+      return { ...row, remaining, collected, status, pct };
+    }));
+  };
 
   const overallStatus = computeOverallStatus(rows);
   const totalEntitled = rows.reduce((s, r) => s + r.totalPrice, 0).toFixed(2);
@@ -156,7 +178,15 @@ export default function Allocation() {
                       {row.collected} {row.unit}
                     </td>
                     <td className="px-4 py-4 text-center text-gray-500">
-                      {+(row.entitledQty - row.collected).toFixed(2)} {row.unit}
+                      <input
+                        type="number"
+                        min={0}
+                        max={row.entitledQty}
+                        value={row.remaining}
+                        onChange={e => handleRemainingChange(row.id, e.target.value)}
+                        className="w-20 mx-auto border border-gray-200 rounded-lg px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">Remaining {row.unit}</p>
                     </td>
                     <td className="px-4 py-4 text-center text-gray-500">
                       ₹{row.pricePerUnit}/{row.unit}
@@ -193,7 +223,7 @@ export default function Allocation() {
                   </div>
                   <div className="flex justify-between text-xs text-gray-500 mb-1.5">
                     <span>Collected: <strong className="text-gray-800">{row.collected} {row.unit}</strong></span>
-                    <span>Entitled: <strong className="text-gray-800">{row.entitledQty} {row.unit}</strong></span>
+                    <span>Remaining: <strong className="text-gray-800">{row.remaining} {row.unit}</strong></span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-1.5">
                     <div

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, AlertTriangle, ArrowRight, Store, Star, Clock, Database, Navigation } from 'lucide-react';
-import { MOCK_SHOPS, STOCK_STATUS } from '../../constants';
+import { STOCK_STATUS } from '../../constants';
 import { searchShopsByPincode } from '../../services/shopService';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
@@ -18,16 +18,19 @@ export default function ShopFinder() {
   const [pincode, setPincode] = useState('');
   const [filter, setFilter]   = useState('all');
   const [loading, setLoading] = useState(false);
+  const [serviceResult, setServiceResult] = useState({
+    ok: false,
+    error: 'REAL_SHOP_DATA_UNAVAILABLE',
+    shops: [],
+  });
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => { setLoading(false); }, 600);
+    const result = await searchShopsByPincode({ pincode });
+    setServiceResult(result);
+    setLoading(false);
   };
-
-  const serviceResult = pincode.length === 6
-    ? searchShopsByPincode({ pincode })
-    : { ok: true, shops: MOCK_SHOPS };
 
   const shops = serviceResult.shops.filter(s => {
     const matchFilter = filter === 'all' || s.stockStatus === filter;
@@ -47,7 +50,7 @@ export default function ShopFinder() {
           </div>
           <h1 className="text-2xl md:text-3xl font-bold mb-5">Find Ration Shops</h1>
           <p className="text-green-100 text-sm mb-4 max-w-2xl">
-            Recommended shops are ranked by pincode match, distance, open status, stock availability, and citizen review signals.
+            Search only returns externally sourced shop records from Google Places, OpenStreetMap, or authorized FPS datasets.
           </p>
 
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
@@ -105,13 +108,13 @@ export default function ShopFinder() {
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6 flex items-start gap-3">
           <Database size={18} className="text-blue-700 shrink-0 mt-0.5" />
           <p className="text-sm text-blue-800 leading-relaxed">
-            Real shop discovery should source FPS IDs, addresses, dealer licenses, and entitlement mapping from the state PDS/FPS registry; live stock from ePOS sync; open hours from district updates; and ratings from verified receipt holders only.
+            Real shop discovery must source shop name, full address, coordinates, ratings, reviews, maps URL, and phone from Google Places, OpenStreetMap, or authorized FPS datasets. This page does not invent shops.
           </p>
         </div>
 
-        {!serviceResult.ok && (
+        {!serviceResult.ok && pincode.length === 6 && (
           <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-6 text-sm text-red-700">
-            Enter a valid 6-digit pincode to get registered FPS recommendations.
+            Real shop data unavailable for this location.
           </div>
         )}
 
@@ -120,8 +123,8 @@ export default function ShopFinder() {
         ) : shops.length === 0 ? (
           <div className="text-center py-20">
             <Store size={48} className="mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-500 font-medium">No shops found</p>
-            <p className="text-gray-400 text-sm mt-1">Try adjusting your search or filters</p>
+            <p className="text-gray-500 font-medium">Real shop data unavailable for this location.</p>
+            <p className="text-gray-400 text-sm mt-1">Configure Google Places, OpenStreetMap, or an FPS dataset provider to display real shops.</p>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -193,7 +196,7 @@ function ShopCard({ shop, recommended }) {
       <div className="mt-auto">
         <Link
           to={`/shops/${shop.id}`}
-          state={{ mapsLink: shop.mapsLink }}
+          state={{ shop }}
           className="w-full inline-flex items-center justify-center gap-1.5 bg-green-700 hover:bg-green-800 text-white text-sm font-medium py-2.5 rounded-xl transition-all"
         >
           View Details <ArrowRight size={14} />

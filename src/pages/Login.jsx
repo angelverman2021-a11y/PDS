@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { VERIFY_STATE } from '../context/authConstants';
-import { ROLES } from '../constants';
+import { ROLES, USER_CREDENTIALS, MOCK_USERS } from '../constants';
 import Button from '../components/common/Button';
 import {
   Truck, User, Store, ShieldCheck,
@@ -122,14 +122,16 @@ function BeneficiaryCard({ beneficiary, onConfirm, loading }) {
 export default function Login() {
   const [activeTab, setActiveTab]   = useState(ROLES.CITIZEN);
   const [rationCard, setRationCard] = useState('');
+  const [phone, setPhone]           = useState('');
   const [otp, setOtp]               = useState('');
   const [maskedPhone, setMaskedPhone] = useState('');
+  const [otpHint, setOtpHint]       = useState('');
   const [username, setUsername]     = useState('');
   const [password, setPassword]     = useState('');
   const [confirming, setConfirming] = useState(false);
 
   const { login, loading, verifyState, pendingBeneficiary,
-          validateRationCard, validateOTP, resetVerification,
+          validateCitizenCredentials, validateOTP, resetVerification,
           otpAttempts, otpSentAt } = useAuth();
   const navigate = useNavigate();
 
@@ -154,33 +156,36 @@ export default function Login() {
     [ROLES.ADMIN]:   '/admin/district',
   };
 
-  // ── Citizen Step 1: validate ration card ─────────────────
+  // ── Citizen Step 1: validate ration card and registered phone ──
   const handleSendOTP = async (e) => {
     e.preventDefault();
-    if (!rationCard.trim()) return toast.error('Enter your Ration Card Number');
-    const res = await validateRationCard(rationCard);
+    if (!rationCard.trim()) return toast.error('Enter your ration card number.');
+    if (!phone.trim()) return toast.error('Enter your registered phone number.');
+
+    const res = await validateCitizenCredentials({ rationCardNo: rationCard, phone });
     if (res.success) {
       setMaskedPhone(res.maskedPhone);
+      setOtpHint(res.debugOtp ? `Use OTP ${res.debugOtp}` : 'Check your registered phone for the OTP.');
       toast.success(`OTP sent to ${res.maskedPhone}`);
     } else {
-      toast.error('Ration Card not found in registry. Check the number and try again.');
+      toast.error('Ration card and phone combination did not match our registry.');
     }
   };
 
-  // ── Citizen Step 2: validate OTP ─────────────────────────
+  // ── Citizen Step 2: verify OTP ────────────────────────────
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
-    if (!otp.trim()) return toast.error('Enter the OTP');
+    if (!otp.trim()) return toast.error('Enter the OTP sent to your phone.');
     const res = await validateOTP(otp);
     if (res.success) {
       toast.success('OTP verified successfully!');
     } else {
-      toast.error('Incorrect OTP. Please try again.');
+      toast.error('OTP verification failed. Please try again.');
       setOtp('');
     }
   };
 
-  // ── Citizen Step 3: confirm and go to dashboard ──────────
+  // ── Citizen Step 3: confirm and continue ─────────────────
   const handleConfirm = () => {
     setConfirming(true);
     setTimeout(() => {
@@ -192,21 +197,19 @@ export default function Login() {
   // ── Dealer / Admin login ──────────────────────────────────
   const handleStaffLogin = (e) => {
     e.preventDefault();
-    if (activeTab === ROLES.DEALER && (username !== 'dealer' || password !== 'dealer123')) {
-      return toast.error('Invalid credentials. Use dealer / dealer123');
+    const credentials = USER_CREDENTIALS[activeTab];
+    if (!credentials || username.trim() !== credentials.username || password !== credentials.password) {
+      return toast.error('Invalid username or password. Please enter your registered credentials.');
     }
-    if (activeTab === ROLES.ADMIN && (username !== 'admin' || password !== 'admin123')) {
-      return toast.error('Invalid credentials. Use admin / admin123');
-    }
-    login(activeTab);
-    toast.success(`Welcome! Logged in as ${activeTab}`);
+    login(MOCK_USERS[activeTab]);
+    toast.success(`Welcome back, ${MOCK_USERS[activeTab].name}`);
     setTimeout(() => navigate(redirectMap[activeTab]), 900);
   };
 
   const handleTabChange = (role) => {
     setActiveTab(role);
     resetVerification();
-    setRationCard(''); setOtp(''); setMaskedPhone('');
+    setRationCard(''); setPhone(''); setOtp(''); setMaskedPhone(''); setOtpHint('');
     setUsername(''); setPassword('');
   };
 
@@ -294,9 +297,14 @@ export default function Login() {
               // Step 2: OTP entry
               verifyState === VERIFY_STATE.OTP_SENT ? (
                 <form onSubmit={handleVerifyOTP} className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex items-center gap-2">
-                    <Phone size={14} className="shrink-0" />
-                    OTP sent to <strong>{maskedPhone}</strong>
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Phone size={14} className="shrink-0" />
+                      OTP sent to <strong>{maskedPhone}</strong>
+                    </div>
+                    {otpHint && (
+                      <p className="text-xs text-gray-500">{otpHint}</p>
+                    )}
                   </div>
 
                   {/* Countdown */}
@@ -358,17 +366,6 @@ export default function Login() {
               // Step 1: Ration card entry
               (
                 <form onSubmit={handleSendOTP} className="space-y-4">
-                  {/* Demo hint */}
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-                    <strong>Demo — Valid Ration Cards:</strong>
-                    <div className="mt-1.5 space-y-1 font-mono">
-                      <p>MH-2024-00123 → OTP: 4521 (Ramesh Kumar)</p>
-                      <p>MH-2024-00124 → OTP: 7834 (Sunita Devi)</p>
-                      <p>MH-2024-00125 → OTP: 3390 (Prakash Mane)</p>
-                      <p>MH-2024-00126 → OTP: 6612 (Anita Bhosale)</p>
-                    </div>
-                  </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Ration Card Number
@@ -386,9 +383,22 @@ export default function Login() {
                     />
                     {verifyState === VERIFY_STATE.INVALID_CARD && (
                       <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                        <XCircle size={12} /> Ration Card not found in registry.
+                        <XCircle size={12} /> Ration card and phone number must match the registered record.
                       </p>
                     )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Registered Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      placeholder="e.g. 9876543210"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
                   </div>
 
                   <Button type="submit" fullWidth loading={loading} size="lg">
@@ -401,12 +411,8 @@ export default function Login() {
             {/* ── DEALER / ADMIN FLOW ── */}
             {(activeTab === ROLES.DEALER || activeTab === ROLES.ADMIN) && (
               <form onSubmit={handleStaffLogin} className="space-y-4">
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-                  <strong>Demo:</strong>{' '}
-                  {activeTab === ROLES.DEALER
-                    ? 'Username: dealer | Password: dealer123'
-                    : 'Username: admin | Password: admin123'
-                  }
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
+                  Enter the registered staff username and password to access the dealer or district administrator portal.
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>

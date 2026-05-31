@@ -16,6 +16,7 @@ import CitizenDashboard from '../pages/citizen/Dashboard';
 import Allocation from '../pages/citizen/Allocation';
 import Receipts from '../pages/citizen/Receipts';
 import ComplaintTracker from '../pages/citizen/ComplaintTracker';
+import RationDiary from '../pages/citizen/RationDiary';
 
 // Dealer Pages
 import DealerDashboard from '../pages/dealer/DealerDashboard';
@@ -53,6 +54,11 @@ export default function AppRoutes() {
       <Route path="/allocation" element={
         <ProtectedRoute allowedRole={ROLES.CITIZEN}>
           <Allocation />
+        </ProtectedRoute>
+      } />
+      <Route path="/diary" element={
+        <ProtectedRoute allowedRole={ROLES.CITIZEN}>
+          <RationDiary />
         </ProtectedRoute>
       } />
       <Route path="/receipts" element={

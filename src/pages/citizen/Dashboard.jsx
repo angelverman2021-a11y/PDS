@@ -14,6 +14,7 @@ const quickActions = [
   { to: '/receipts',       label: 'Receipts',         icon: QrCode,         color: 'blue'   },
   { to: '/complaints/track', label: 'Track Complaint', icon: AlertTriangle,  color: 'amber'  },
   { to: '/shops',          label: 'Shop Finder',      icon: Store,          color: 'purple' },
+  { to: '/diary',          label: 'Ration Diary',     icon: ClipboardList,  color: 'teal'   },
   { to: '/verify',         label: 'Verify QR',        icon: ShieldCheck,    color: 'teal'   },
 ];
 

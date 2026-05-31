@@ -1,9 +1,10 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   MapPin, User, Calendar, AlertTriangle, ArrowLeft,
   Store, QrCode, Flag, Package,
 } from 'lucide-react';
-import { MOCK_SHOPS, STOCK_STATUS } from '../../constants';
+import { STOCK_STATUS } from '../../constants';
+import { getRegisteredFpsShops } from '../../services/shopService';
 
 const statusConfig = {
   [STOCK_STATUS.AVAILABLE]:    { label: 'Stock Available',  color: 'bg-green-500',  ring: 'ring-green-200',  text: 'text-green-700',  bg: 'bg-green-50'  },
@@ -13,15 +14,16 @@ const statusConfig = {
 
 export default function ShopDetails() {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
-  const shop = MOCK_SHOPS.find(s => s.id === id);
+  const shop = location.state?.shop || getRegisteredFpsShops().find(s => s.id === id || s.fpsId === id);
 
   if (!shop) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-center px-4">
         <Store size={48} className="text-gray-300" />
-        <p className="text-xl font-bold text-gray-700">Shop Not Found</p>
-        <p className="text-gray-400 text-sm">The shop you're looking for doesn't exist.</p>
+        <p className="text-xl font-bold text-gray-700">Real shop data unavailable for this location.</p>
+        <p className="text-gray-400 text-sm">Configure Google Places, OpenStreetMap, or an authorized FPS dataset provider to view shop details.</p>
         <Link to="/shops" className="text-green-700 font-medium hover:underline flex items-center gap-1">
           <ArrowLeft size={14} /> Back to Shop Finder
         </Link>

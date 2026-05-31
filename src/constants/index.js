@@ -46,15 +46,13 @@ export const VERIFICATION_RESPONSE = {
 };
 
 // ─── Registered Beneficiary Registry ────────────────────
-// Only these ration card numbers are valid in the system.
-// Each has a masked phone, OTP, and full profile.
+// Demo registry. Production must replace this with authenticated backend records.
 export const BENEFICIARY_REGISTRY = {
   'MH-2024-00123': {
     id: 'citizen_001',
     name: 'Ramesh Kumar',
     phone: '9876543210',
     maskedPhone: '98765*****',
-    otp: '4521',
     rationCardNo: 'MH-2024-00123',
     role: ROLES.CITIZEN,
     shopId: 'shop_001',
@@ -73,7 +71,6 @@ export const BENEFICIARY_REGISTRY = {
     name: 'Sunita Devi',
     phone: '9823001122',
     maskedPhone: '98230*****',
-    otp: '7834',
     rationCardNo: 'MH-2024-00124',
     role: ROLES.CITIZEN,
     shopId: 'shop_001',
@@ -92,7 +89,6 @@ export const BENEFICIARY_REGISTRY = {
     name: 'Prakash Mane',
     phone: '9765432100',
     maskedPhone: '97654*****',
-    otp: '3390',
     rationCardNo: 'MH-2024-00125',
     role: ROLES.CITIZEN,
     shopId: 'shop_002',
@@ -111,7 +107,6 @@ export const BENEFICIARY_REGISTRY = {
     name: 'Anita Bhosale',
     phone: '9812345678',
     maskedPhone: '98123*****',
-    otp: '6612',
     rationCardNo: 'MH-2024-00126',
     role: ROLES.CITIZEN,
     shopId: 'shop_002',
@@ -132,6 +127,7 @@ export const MOCK_USERS = {
   citizen: BENEFICIARY_REGISTRY['MH-2024-00123'],
   dealer: {
     id: 'dealer_001',
+    username: 'suresh.patil',
     name: 'Suresh Patil',
     phone: '9823456789',
     role: ROLES.DEALER,
@@ -140,11 +136,23 @@ export const MOCK_USERS = {
   },
   admin: {
     id: 'admin_001',
+    username: 'sharma.district',
     name: 'District Officer Sharma',
     phone: '9811223344',
     role: ROLES.ADMIN,
     districtId: 'dist_pune',
     district: 'Pune',
+  },
+};
+
+export const USER_CREDENTIALS = {
+  dealer: {
+    username: 'suresh.patil',
+    password: 'FPS4521!'
+  },
+  admin: {
+    username: 'sharma.district',
+    password: 'Pune2025@'
   },
 };
 

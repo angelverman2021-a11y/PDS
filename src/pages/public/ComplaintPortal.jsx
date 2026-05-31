@@ -14,7 +14,7 @@ const STEPS = [
 
 function generateComplaintNo() {
   const num = Math.floor(Math.random() * 90000) + 10000;
-  return `CMP-2025-0${num}`;
+  return `CMP-PUN-2025-${num}`;
 }
 
 export default function ComplaintPortal() {
@@ -68,7 +68,7 @@ export default function ComplaintPortal() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Complaint Registered!</h2>
           <p className="text-gray-500 text-sm mb-6">
-            Your complaint has been submitted successfully. Use the number below to track its status.
+            Your complaint has been submitted successfully. Use this tracking ID to follow review, assignment, resolution, and closure.
           </p>
 
           {/* Complaint Number Box */}
@@ -102,6 +102,10 @@ export default function ComplaintPortal() {
               <span className="font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full text-xs">
                 Submitted
               </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Expected first review</span>
+              <span className="font-medium text-gray-800">Within 3 working days</span>
             </div>
           </div>
 
@@ -226,7 +230,7 @@ export default function ComplaintPortal() {
               {/* Category descriptions */}
               {[
                 { value: 'stock_diversion', label: 'Stock Diversion', desc: 'Dealer selling PDS stock in open market', color: 'red' },
-                { value: 'overcharging',    label: 'Overcharging',    desc: 'Charged more than official subsidized price', color: 'orange' },
+                { value: 'overcharging',    label: 'Overcharging',    desc: 'Charged more than the published ration price', color: 'orange' },
                 { value: 'denial',          label: 'Denial of Service', desc: 'Refused to give ration or shop was closed', color: 'amber' },
                 { value: 'fake_entry',      label: 'Fake Entry',      desc: 'Distribution marked without actually giving ration', color: 'purple' },
                 { value: 'other',           label: 'Other Issue',     desc: 'Any other PDS-related complaint', color: 'gray' },

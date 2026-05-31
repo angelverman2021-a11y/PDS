@@ -2,13 +2,12 @@ import { Package, Calendar, Store, Info, Clock, CheckCircle } from 'lucide-react
 import { useAuth } from '../../context/useAuth';
 import {
   computeAllocation, MOCK_COLLECTED,
-  CATEGORY_ENTITLEMENTS, RATION_PRODUCTS,
+  CATEGORY_ENTITLEMENTS,
 } from '../../constants';
 import Badge from '../../components/common/Badge';
 import Card from '../../components/common/Card';
 
 const MONTH_LABEL   = 'July 2025';
-const MONTH_KEY     = '2025-07';
 const WINDOW        = '1 July 2025 – 31 July 2025';
 const LAST_UPDATED  = '10 Jul 2025, 09:14 AM · Dealer ePOS';
 

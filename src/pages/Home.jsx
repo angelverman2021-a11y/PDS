@@ -103,10 +103,10 @@ const changelog = [
 ];
 
 const credibilityItems = [
-  { icon: Landmark, label: 'District Authority', value: 'Office of District Food Supply Officer, Pune', detail: 'Nodal officer: DFO Meera Sharma, 020-2456-1180' },
-  { icon: Database, label: 'Data Sources', value: 'ePOS transactions, FPS stock register, citizen QR verification, complaint records', detail: 'Mock data shown for demo; production requires state PDS API integration.' },
+  { icon: Landmark, label: 'Platform Identity', value: 'Independent Transparency Platform', detail: 'Not affiliated with any government agency; built to help citizens understand and verify public ration delivery data.' },
+  { icon: Database, label: 'Data Sources', value: 'FPS registry samples, ePOS-style transactions, citizen QR verification, complaint records', detail: 'Demo data shown for prototype; production must use authorized state PDS integrations or public datasets.' },
   { icon: BadgeCheck, label: 'Last Sync', value: '15 July 2025, 10:35 AM IST', detail: 'Daily reconciliation at 6 AM, 12 PM, and 6 PM during distribution week.' },
-  { icon: ClipboardCheck, label: 'Verification Process', value: 'Dealer entry + receipt QR + citizen confirmation + officer review', detail: 'Mismatch cases are flagged for field inspection within 48 hours.' },
+  { icon: ClipboardCheck, label: 'Verification Methodology', value: 'Dealer entry + receipt QR + citizen confirmation + reviewer action', detail: 'Mismatch cases are flagged for follow-up and evidence review within 48 hours.' },
 ];
 
 const inspectionRecords = [
@@ -117,8 +117,8 @@ const inspectionRecords = [
 
 const trustItems = [
   { icon: ShieldCheck, title: 'Why citizens can trust it', desc: 'Every visible ration claim is linked to a shop ID, timestamp, receipt QR, and complaint trail instead of a plain self-declaration.' },
-  { icon: BadgeCheck, title: 'How reports are verified', desc: 'Citizen photos are checked against receipt time, shop location, allocation month, and repeated reports from the same FPS.' },
-  { icon: Timer, title: 'Resolution expectations', desc: 'Acknowledgement within 24 hours, first officer review within 3 working days, and escalation after 7 working days if unresolved.' },
+  { icon: BadgeCheck, title: 'Verification methodology', desc: 'Citizen photos are checked against receipt time, shop location, allocation month, and repeated reports from the same FPS.' },
+  { icon: Timer, title: 'Complaint resolution process', desc: 'Acknowledgement within 24 hours, first review within 3 working days, assignment to a reviewer, resolution, and closure after beneficiary confirmation.' },
   { icon: Scale, title: 'Citizen rights', desc: 'Beneficiaries can ask for printed receipts, inspect the FPS notice board, receive full entitlement, and file complaints without dealer approval.' },
 ];
 
@@ -163,14 +163,14 @@ export default function Home() {
         <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-28 text-center">
           <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 rounded-full px-4 py-1.5 text-sm mb-6">
             <ShieldCheck size={14} />
-            Government of India · Public Distribution System
+            Independent Transparency Platform
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-5">
             Transparent Rations.<br />
             <span className="text-emerald-300">Empowered Citizens.</span>
           </h1>
           <p className="text-lg md:text-xl text-green-100 max-w-2xl mx-auto mb-10">
-            Track your food entitlements, verify receipts, and report corruption — all in one platform built for accountability.
+            Track ration entitlements, verify receipts, and report delivery issues through an independent transparency layer.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -210,14 +210,14 @@ export default function Home() {
             <div>
               <div className="inline-flex items-center gap-2 text-green-700 font-semibold text-sm mb-3">
                 <Landmark size={16} />
-                Government Credibility
+                Platform Credibility
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">Transparent data, visible authority, auditable action.</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Transparent data, clear independence, auditable action.</h2>
               <p className="text-gray-600 mb-5">
-                This platform is a public transparency interface for ration visibility. Demo data is realistic sample data; production deployment must connect to authorized state PDS, ePOS, and district complaint systems.
+                This platform is a public-interest transparency interface for ration visibility. Demo data is realistic sample data; production deployment must connect to authorized state PDS, ePOS, FPS registry, and complaint systems where permitted.
               </p>
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                <strong>Official disclaimer:</strong> This prototype does not replace statutory PDS records, official orders, or district grievance proceedings. Final decisions remain with the competent food and civil supplies authority.
+                <strong>Independence disclosure:</strong> Not affiliated with any government agency. This prototype does not replace statutory PDS records, public authority orders, or formal grievance proceedings.
               </div>
             </div>
 
@@ -238,7 +238,7 @@ export default function Home() {
           <div className="mt-8 rounded-2xl border border-gray-100 overflow-hidden">
             <div className="bg-gray-900 text-white px-5 py-3 flex items-center gap-2 font-semibold">
               <ClipboardCheck size={18} />
-              Recent Inspection Records
+              Audit History
             </div>
             <div className="divide-y divide-gray-100 bg-white">
               {inspectionRecords.map((record) => (
@@ -358,7 +358,7 @@ export default function Home() {
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Proof of Life, From Real Households</h2>
               <p className="text-gray-600 max-w-2xl">
-                Citizens can post photos of received rations so neighbors, officials, and support teams can see that supplies reached the right families.
+                Citizens can post photos of received rations so neighbors, reviewers, and support teams can see that supplies reached the right families.
               </p>
             </div>
             <button className="inline-flex items-center justify-center gap-2 bg-green-700 text-white font-semibold px-5 py-3 rounded-xl hover:bg-green-800">

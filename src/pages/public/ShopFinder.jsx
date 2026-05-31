@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, AlertTriangle, ArrowRight, Store } from 'lucide-react';
+import { Search, MapPin, AlertTriangle, ArrowRight, Store, Star, Clock, Database, Navigation } from 'lucide-react';
 import { MOCK_SHOPS, STOCK_STATUS } from '../../constants';
+import { searchShopsByPincode } from '../../services/shopService';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 
@@ -24,11 +25,14 @@ export default function ShopFinder() {
     setTimeout(() => { setLoading(false); }, 600);
   };
 
-  const shops = MOCK_SHOPS.filter(s => {
+  const serviceResult = pincode.length === 6
+    ? searchShopsByPincode({ pincode })
+    : { ok: true, shops: MOCK_SHOPS };
+
+  const shops = serviceResult.shops.filter(s => {
     const matchFilter = filter === 'all' || s.stockStatus === filter;
     const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.address.toLowerCase().includes(search.toLowerCase());
-    const matchPin    = !pincode || s.address.includes(pincode);
-    return matchFilter && matchSearch && matchPin;
+    return matchFilter && matchSearch;
   });
 
   return (
@@ -42,6 +46,9 @@ export default function ShopFinder() {
             <p className="text-green-200 text-sm">Public Directory</p>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold mb-5">Find Ration Shops</h1>
+          <p className="text-green-100 text-sm mb-4 max-w-2xl">
+            Recommended shops are ranked by pincode match, distance, open status, stock availability, and citizen review signals.
+          </p>
 
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
@@ -95,6 +102,19 @@ export default function ShopFinder() {
           <span className="ml-auto text-sm text-gray-400 self-center">{shops.length} shops found</span>
         </div>
 
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6 flex items-start gap-3">
+          <Database size={18} className="text-blue-700 shrink-0 mt-0.5" />
+          <p className="text-sm text-blue-800 leading-relaxed">
+            Real shop discovery should source FPS IDs, addresses, dealer licenses, and entitlement mapping from the state PDS/FPS registry; live stock from ePOS sync; open hours from district updates; and ratings from verified receipt holders only.
+          </p>
+        </div>
+
+        {!serviceResult.ok && (
+          <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-6 text-sm text-red-700">
+            Enter a valid 6-digit pincode to get registered FPS recommendations.
+          </div>
+        )}
+
         {loading ? (
           <Loader text="Finding shops…" />
         ) : shops.length === 0 ? (
@@ -105,8 +125,8 @@ export default function ShopFinder() {
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {shops.map(shop => (
-              <ShopCard key={shop.id} shop={shop} />
+            {shops.map((shop, index) => (
+              <ShopCard key={shop.id} shop={shop} recommended={index === 0 && !!pincode} />
             ))}
           </div>
         )}
@@ -115,21 +135,38 @@ export default function ShopFinder() {
   );
 }
 
-function ShopCard({ shop }) {
+function ShopCard({ shop, recommended }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all p-5 flex flex-col">
       <div className="flex items-start justify-between mb-3">
         <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
           <Store size={18} className="text-green-700" />
         </div>
-        <Badge status={shop.stockStatus} />
+        <div className="flex flex-col items-end gap-1">
+          {recommended && (
+            <span className="rounded-full bg-blue-100 text-blue-700 px-2 py-0.5 text-xs font-semibold">Recommended</span>
+          )}
+          <Badge status={shop.stockStatus} />
+        </div>
       </div>
 
       <h3 className="font-bold text-gray-900 mb-1">{shop.name}</h3>
+      <p className="text-xs text-gray-400 font-medium mb-2">{shop.fpsId}</p>
       <p className="text-xs text-gray-500 flex items-start gap-1 mb-3">
         <MapPin size={12} className="shrink-0 mt-0.5" />
         {shop.address}
       </p>
+
+      <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+        <div className="bg-gray-50 rounded-lg p-2">
+          <p className="text-gray-400 flex items-center gap-1"><Navigation size={10} /> Distance</p>
+          <p className="font-semibold text-gray-700 mt-0.5">{shop.distanceKm.toFixed(1)} km</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-2">
+          <p className="text-gray-400 flex items-center gap-1"><Star size={10} /> Rating</p>
+          <p className="font-semibold text-gray-700 mt-0.5">{shop.rating} ({shop.reviewCount} reviews)</p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-2 text-xs mb-4">
         <div className="bg-gray-50 rounded-lg p-2">
@@ -146,9 +183,17 @@ function ShopCard({ shop }) {
         </div>
       </div>
 
+      <div className={`rounded-lg p-2 text-xs mb-4 ${shop.isOpen ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+        <p className="font-semibold flex items-center gap-1">
+          <Clock size={11} /> {shop.isOpen ? 'Open now' : 'Closed now'}
+        </p>
+        <p className="mt-0.5">{shop.timings}</p>
+      </div>
+
       <div className="mt-auto">
         <Link
           to={`/shops/${shop.id}`}
+          state={{ mapsLink: shop.mapsLink }}
           className="w-full inline-flex items-center justify-center gap-1.5 bg-green-700 hover:bg-green-800 text-white text-sm font-medium py-2.5 rounded-xl transition-all"
         >
           View Details <ArrowRight size={14} />

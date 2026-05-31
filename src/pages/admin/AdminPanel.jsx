@@ -21,22 +21,24 @@ const STATUS_FILTERS = [
   { key: 'all',          label: 'All' },
   { key: 'submitted',    label: 'Submitted' },
   { key: 'under_review', label: 'Under Review' },
+  { key: 'assigned',     label: 'Assigned' },
   { key: 'resolved',     label: 'Resolved' },
-  { key: 'escalated',    label: 'Escalated' },
+  { key: 'closed',       label: 'Closed' },
 ];
 
 const NEXT_STATUS = {
-  submitted:    ['under_review', 'escalated'],
-  under_review: ['resolved', 'escalated'],
-  escalated:    ['resolved'],
-  resolved:     [],
+  submitted:    ['under_review'],
+  under_review: ['assigned'],
+  assigned:     ['resolved'],
+  resolved:     ['closed'],
   closed:       [],
 };
 
 const STATUS_LABELS = {
   under_review: 'Mark Under Review',
+  assigned:     'Assign Officer',
   resolved:     'Mark Resolved',
-  escalated:    'Escalate',
+  closed:       'Close Complaint',
 };
 
 // ── Complaint Row ─────────────────────────────────────────
@@ -69,7 +71,7 @@ function ComplaintRow({ complaint, onStatusChange }) {
       >
         <div className="flex items-start gap-3 min-w-0">
           <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
-            complaint.status === 'escalated'    ? 'bg-red-500' :
+            complaint.status === 'assigned'     ? 'bg-purple-500' :
             complaint.status === 'under_review' ? 'bg-amber-500' :
             complaint.status === 'resolved'     ? 'bg-green-500' : 'bg-blue-500'
           }`} />
@@ -169,7 +171,8 @@ function ComplaintRow({ complaint, onStatusChange }) {
                   disabled={saving}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-50 ${
                     s === 'resolved'     ? 'bg-green-600 hover:bg-green-700 text-white' :
-                    s === 'escalated'    ? 'bg-red-600 hover:bg-red-700 text-white' :
+                    s === 'closed'       ? 'bg-gray-700 hover:bg-gray-800 text-white' :
+                    s === 'assigned'     ? 'bg-purple-600 hover:bg-purple-700 text-white' :
                     'bg-amber-500 hover:bg-amber-600 text-white'
                   }`}
                 >
@@ -177,7 +180,7 @@ function ComplaintRow({ complaint, onStatusChange }) {
                     <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : s === 'resolved' ? (
                     <CheckCircle size={13} />
-                  ) : s === 'escalated' ? (
+                  ) : s === 'assigned' ? (
                     <ShieldAlert size={13} />
                   ) : (
                     <Clock size={13} />
@@ -228,8 +231,9 @@ function ComplaintsTab() {
     all:          complaints.length,
     submitted:    complaints.filter(c => c.status === COMPLAINT_STATUS.SUBMITTED).length,
     under_review: complaints.filter(c => c.status === COMPLAINT_STATUS.UNDER_REVIEW).length,
+    assigned:     complaints.filter(c => c.status === COMPLAINT_STATUS.ASSIGNED).length,
     resolved:     complaints.filter(c => c.status === COMPLAINT_STATUS.RESOLVED).length,
-    escalated:    complaints.filter(c => c.status === COMPLAINT_STATUS.ESCALATED).length,
+    closed:       complaints.filter(c => c.status === COMPLAINT_STATUS.CLOSED).length,
   };
 
   return (
@@ -240,7 +244,7 @@ function ComplaintsTab() {
         {[
           { key: 'submitted',    label: 'New',          color: 'blue'  },
           { key: 'under_review', label: 'In Review',    color: 'amber' },
-          { key: 'escalated',    label: 'Escalated',    color: 'red'   },
+          { key: 'assigned',     label: 'Assigned',     color: 'purple' },
           { key: 'resolved',     label: 'Resolved',     color: 'green' },
         ].map(({ key, label, color }) => (
           <div key={key} className={`bg-${color}-50 border border-${color}-100 rounded-xl p-3 text-center`}>
@@ -313,7 +317,7 @@ function AuditLogsTab() {
     'Stock Updated':        { icon: Store,         color: 'text-blue-600 bg-blue-50'   },
     'Receipt Generated':    { icon: FileText,       color: 'text-green-600 bg-green-50' },
     'Complaint Resolved':   { icon: CheckCircle,    color: 'text-green-600 bg-green-50' },
-    'Complaint Escalated':  { icon: ShieldAlert,    color: 'text-red-600 bg-red-50'     },
+    'Complaint Assigned':   { icon: ShieldAlert,    color: 'text-purple-600 bg-purple-50' },
     'Citizen Verification': { icon: User,           color: 'text-purple-600 bg-purple-50'},
   };
 

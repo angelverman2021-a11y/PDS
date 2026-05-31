@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import {
   Package, Users, ClipboardList, CheckCircle,
-  Truck, TrendingUp, AlertTriangle, QrCode, Plus,
+  Truck, TrendingUp, AlertTriangle, Plus,
 } from 'lucide-react';
 import {
   MOCK_USERS, MOCK_SHOPS, MOCK_DISTRIBUTION_LOGS,
 } from '../../constants';
 import Button from '../../components/common/Button';
-import Badge from '../../components/common/Badge';
 import DistributionFlow from '../../components/dealer/DistributionFlow';
 import Modal from '../../components/common/Modal';
 import toast from 'react-hot-toast';
@@ -16,14 +15,6 @@ const TABS = [
   { id: 'stock',        label: 'Stock Update',      icon: Package },
   { id: 'distribution', label: 'Distribution',      icon: Users },
   { id: 'logs',         label: 'Logs',              icon: ClipboardList },
-];
-
-const QR_CELLS = [
-  true, true, true, false, true,
-  true, false, true, false, false,
-  true, true, false, true, true,
-  false, true, false, true, false,
-  true, false, true, true, true,
 ];
 
 // ── Stock Update Tab ─────────────────────────────────────

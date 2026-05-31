@@ -1,30 +1,19 @@
 import { useState } from 'react';
 import { BENEFICIARY_REGISTRY, MOCK_USERS } from '../constants';
 import { AuthContext } from './AuthContextCore';
+import { VERIFY_STATE } from './authConstants';
 
-// ── Verification States ───────────────────────────────────
-export const VERIFY_STATE = {
-  IDLE:         'idle',
-  OTP_SENT:     'otp_sent',
-  VERIFIED:     'verified',
-  INVALID_CARD: 'invalid_card',
-  INVALID_OTP:  'invalid_otp',
-  LOCKED:       'locked',   // too many wrong OTP attempts
-  EXPIRED:      'expired',  // OTP expired after 5 minutes
-};
-
-const OTP_EXPIRY_MS  = 5 * 60 * 1000; // 5 minutes
-const MAX_OTP_TRIES  = 3;
+const OTP_EXPIRY_MS = 5 * 60 * 1000;
+const MAX_OTP_TRIES = 3;
 
 export function AuthProvider({ children }) {
-  const [user, setUser]             = useState(null);
-  const [loading, setLoading]       = useState(false);
-  const [verifyState, setVerifyState]     = useState(VERIFY_STATE.IDLE);
-  const [pendingBeneficiary, setPending]  = useState(null);
-  const [otpSentAt, setOtpSentAt]         = useState(null);
-  const [otpAttempts, setOtpAttempts]     = useState(0);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [verifyState, setVerifyState] = useState(VERIFY_STATE.IDLE);
+  const [pendingBeneficiary, setPending] = useState(null);
+  const [otpSentAt, setOtpSentAt] = useState(null);
+  const [otpAttempts, setOtpAttempts] = useState(0);
 
-  // ── Step 1: Validate ration card ─────────────────────────
   const validateRationCard = (rationCardNo) => {
     return new Promise((resolve) => {
       setLoading(true);
@@ -45,7 +34,6 @@ export function AuthProvider({ children }) {
     });
   };
 
-  // ── Step 2: Validate OTP ─────────────────────────────────
   const validateOTP = (otp) => {
     return new Promise((resolve) => {
       setLoading(true);
@@ -57,14 +45,12 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        // Check expiry
         if (Date.now() - otpSentAt > OTP_EXPIRY_MS) {
           setVerifyState(VERIFY_STATE.EXPIRED);
           resolve({ success: false, reason: 'OTP expired. Please request a new one.' });
           return;
         }
 
-        // Check lock
         if (otpAttempts >= MAX_OTP_TRIES) {
           setVerifyState(VERIFY_STATE.LOCKED);
           resolve({ success: false, reason: 'Too many attempts. Please try again after 30 minutes.' });
@@ -90,7 +76,6 @@ export function AuthProvider({ children }) {
     });
   };
 
-  // ── Dealer / Admin login ──────────────────────────────────
   const login = (role) => {
     setLoading(true);
     setTimeout(() => {
@@ -116,11 +101,17 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading,
-      verifyState, pendingBeneficiary,
-      otpAttempts, otpSentAt,
-      validateRationCard, validateOTP,
-      login, logout, resetVerification,
+      user,
+      loading,
+      verifyState,
+      pendingBeneficiary,
+      otpAttempts,
+      otpSentAt,
+      validateRationCard,
+      validateOTP,
+      login,
+      logout,
+      resetVerification,
     }}>
       {children}
     </AuthContext.Provider>

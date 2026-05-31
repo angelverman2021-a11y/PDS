@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, CheckCircle, Clock, AlertTriangle, XCircle, FileSearch, ArrowUpCircle } from 'lucide-react';
+import { Search, CheckCircle, Clock, AlertTriangle, XCircle, FileSearch, UserCheck, LockKeyhole } from 'lucide-react';
 import { MOCK_COMPLAINTS, COMPLAINT_STATUS } from '../../constants';
 import Badge from '../../components/common/Badge';
 import toast from 'react-hot-toast';
@@ -7,18 +7,24 @@ import toast from 'react-hot-toast';
 const timelineSteps = [
   { key: COMPLAINT_STATUS.SUBMITTED,    label: 'Submitted',    icon: FileSearch   },
   { key: COMPLAINT_STATUS.UNDER_REVIEW, label: 'Under Review', icon: Clock        },
-  { key: COMPLAINT_STATUS.ESCALATED,    label: 'Escalated',    icon: ArrowUpCircle },
+  { key: COMPLAINT_STATUS.ASSIGNED,     label: 'Assigned',     icon: UserCheck    },
   { key: COMPLAINT_STATUS.RESOLVED,     label: 'Resolved',     icon: CheckCircle  },
+  { key: COMPLAINT_STATUS.CLOSED,       label: 'Closed',       icon: LockKeyhole  },
 ];
 
 function getStepIndex(status) {
   const order = [
     COMPLAINT_STATUS.SUBMITTED,
     COMPLAINT_STATUS.UNDER_REVIEW,
-    COMPLAINT_STATUS.ESCALATED,
+    COMPLAINT_STATUS.ASSIGNED,
     COMPLAINT_STATUS.RESOLVED,
+    COMPLAINT_STATUS.CLOSED,
   ];
   return order.indexOf(status);
+}
+
+function getTimelineEntry(complaint, status) {
+  return complaint.timeline?.find(item => item.status === status);
 }
 
 export default function ComplaintTracker() {
@@ -69,7 +75,7 @@ export default function ComplaintTracker() {
                 type="text"
                 value={query}
                 onChange={e => { setQuery(e.target.value); setNotFound(false); }}
-                placeholder="Enter Complaint ID (e.g. CMP-2025-00847)"
+                placeholder="Enter Complaint ID (e.g. CMP-PUN-2025-00847)"
                 className="w-full pl-9 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
@@ -80,7 +86,7 @@ export default function ComplaintTracker() {
               Track
             </button>
           </form>
-          <p className="text-xs text-gray-400 mt-2">Try: CMP-2025-00847 · CMP-2025-00831 · CMP-2025-00798</p>
+          <p className="text-xs text-gray-400 mt-2">Try: CMP-PUN-2025-00847 · CMP-PUN-2025-00831 · CMP-PUN-2025-00798</p>
         </div>
 
         {/* Not Found */}
@@ -107,6 +113,21 @@ export default function ComplaintTracker() {
               <Badge status={complaint.status} size="lg" />
             </div>
 
+            <div className="grid sm:grid-cols-3 gap-3 px-5 py-4 border-b border-gray-50">
+              <div className="rounded-xl bg-gray-50 p-3">
+                <p className="text-xs text-gray-400">Current owner</p>
+                <p className="text-sm font-semibold text-gray-800 mt-0.5">{complaint.currentOwner}</p>
+              </div>
+              <div className="rounded-xl bg-gray-50 p-3">
+                <p className="text-xs text-gray-400">Expected resolution</p>
+                <p className="text-sm font-semibold text-gray-800 mt-0.5">{complaint.expectedResolution}</p>
+              </div>
+              <div className="rounded-xl bg-gray-50 p-3">
+                <p className="text-xs text-gray-400">Evidence attached</p>
+                <p className="text-sm font-semibold text-gray-800 mt-0.5">{complaint.evidenceCount} item{complaint.evidenceCount === 1 ? '' : 's'}</p>
+              </div>
+            </div>
+
             {/* Description */}
             <div className="px-5 py-4 border-b border-gray-50">
               <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Description</p>
@@ -121,6 +142,7 @@ export default function ComplaintTracker() {
                   const done    = idx <= activeStep;
                   const current = idx === activeStep;
                   const isLast  = idx === timelineSteps.length - 1;
+                  const entry = getTimelineEntry(complaint, key);
                   return (
                     <div key={key} className="flex gap-4">
                       {/* Dot + Line */}
@@ -142,14 +164,18 @@ export default function ComplaintTracker() {
                       {/* Label */}
                       <div className="pb-8 last:pb-0 pt-1.5">
                         <p className={`text-sm font-semibold ${done ? 'text-gray-900' : 'text-gray-400'}`}>{label}</p>
-                        {current && complaint.assignedTo && (
+                        {key === COMPLAINT_STATUS.ASSIGNED && complaint.assignedTo && (
                           <p className="text-xs text-gray-500 mt-0.5">Assigned to: {complaint.assignedTo}</p>
                         )}
-                        {key === COMPLAINT_STATUS.SUBMITTED && (
-                          <p className="text-xs text-gray-400 mt-0.5">{complaint.submittedAt}</p>
-                        )}
-                        {key === COMPLAINT_STATUS.RESOLVED && complaint.resolvedAt && (
-                          <p className="text-xs text-gray-400 mt-0.5">{complaint.resolvedAt}</p>
+                        {entry ? (
+                          <>
+                            <p className="text-xs text-gray-400 mt-0.5">{entry.at}</p>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">{entry.note}</p>
+                          </>
+                        ) : (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {done ? 'Completed' : 'Pending'}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -169,11 +195,11 @@ export default function ComplaintTracker() {
               </div>
             )}
 
-            {complaint.status === COMPLAINT_STATUS.ESCALATED && (
-              <div className="mx-5 mb-5 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-                <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700">
-                  This complaint has been escalated to the District Officer for urgent review.
+            {complaint.expectedResolution && activeStep < getStepIndex(COMPLAINT_STATUS.RESOLVED) && (
+              <div className="mx-5 mb-5 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">
+                  If there is no update by {complaint.expectedResolution}, the complaint should move to the next review desk.
                 </p>
               </div>
             )}

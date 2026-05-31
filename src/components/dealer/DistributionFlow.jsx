@@ -2,15 +2,23 @@ import { useState } from 'react';
 import {
   ShieldCheck, Package, CheckCircle, QrCode,
   XCircle, ChevronRight, User, CreditCard,
-  Users, Store, AlertTriangle,
+  Users, AlertTriangle,
 } from 'lucide-react';
 import {
   verifyBeneficiary, checkAllocation,
   confirmDistribution, generateReceipt,
 } from '../../services/receiptService';
 import Button from '../common/Button';
-import Badge from '../common/Badge';
 import toast from 'react-hot-toast';
+
+const QR_CELLS = [
+  true, true, true, true, true, false,
+  true, false, false, true, false, true,
+  true, true, false, true, true, true,
+  false, true, true, false, false, true,
+  true, false, true, true, false, false,
+  true, true, false, true, true, true,
+];
 
 const STEPS = [
   { id: 1, label: 'Verify Beneficiary', icon: ShieldCheck },
@@ -152,7 +160,7 @@ function Step2Allocation({ beneficiary, onSuccess }) {
 }
 
 // ── Step 3 ────────────────────────────────────────────────
-function Step3Confirm({ beneficiary, entitlements, shopId, shopName, onSuccess }) {
+function Step3Confirm({ beneficiary, entitlements, onSuccess }) {
   const [items, setItems]   = useState(
     entitlements.map(e => ({ ...e, qty: e.entitledQty, total: e.totalPrice }))
   );
@@ -260,7 +268,7 @@ function Step4Receipt({ beneficiary, shopId, shopName, distributedItems, confirm
         <div className="bg-gray-900 rounded-xl p-5 flex flex-col items-center gap-3">
           <div className="grid grid-cols-6 gap-1">
             {Array.from({ length: 36 }).map((_, i) => (
-              <div key={i} className={`w-5 h-5 rounded-sm ${Math.random() > 0.45 ? 'bg-white' : 'bg-gray-900'}`} />
+              <div key={i} className={`w-5 h-5 rounded-sm ${QR_CELLS[i] ? 'bg-white' : 'bg-gray-900'}`} />
             ))}
           </div>
           <p className="text-xs text-gray-400 font-mono">{receipt.qrCode}</p>
@@ -320,7 +328,7 @@ function Step4Receipt({ beneficiary, shopId, shopName, distributedItems, confirm
 }
 
 // ── Main Component ────────────────────────────────────────
-export default function DistributionFlow({ shopId, shopName, onClose }) {
+export default function DistributionFlow({ shopId, shopName }) {
   const [step, setStep]                   = useState(1);
   const [beneficiary, setBeneficiary]     = useState(null);
   const [entitlements, setEntitlements]   = useState([]);
@@ -371,8 +379,6 @@ export default function DistributionFlow({ shopId, shopName, onClose }) {
         <Step3Confirm
           beneficiary={beneficiary}
           entitlements={entitlements}
-          shopId={shopId}
-          shopName={shopName}
           onSuccess={(items, at) => { setDistributed(items); setConfirmedAt(at); setStep(4); }}
         />
       )}

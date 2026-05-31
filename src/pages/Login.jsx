@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
-import { VERIFY_STATE } from '../context/AuthContext';
+import { VERIFY_STATE } from '../context/authConstants';
 import { ROLES } from '../constants';
 import Button from '../components/common/Button';
 import {
@@ -78,7 +78,7 @@ function BeneficiaryCard({ beneficiary, onConfirm, loading }) {
             <ShieldCheck size={14} className="text-gray-400 mt-0.5 shrink-0" />
             <div>
               <p className="text-xs text-gray-400">Category</p>
-              <p className="font-semibold text-gray-800 text-xs">{beneficiary.category}</p>
+              <p className="font-semibold text-gray-800 text-xs">{CATEGORY_LABELS[beneficiary.category] ?? beneficiary.category}</p>
             </div>
           </div>
         </div>
@@ -443,7 +443,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-4">
-          Government of India · PDS Transparency Initiative
+          Independent Transparency Platform · Not affiliated with any government agency
         </p>
       </div>
     </div>

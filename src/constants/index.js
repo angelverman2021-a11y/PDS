@@ -45,18 +45,91 @@ export const VERIFICATION_RESPONSE = {
   PARTIAL: 'partial',
 };
 
-// ─── Mock Users ──────────────────────────────────────────
-export const MOCK_USERS = {
-  citizen: {
+// ─── Registered Beneficiary Registry ────────────────────
+// Only these ration card numbers are valid in the system.
+// Each has a masked phone, OTP, and full profile.
+export const BENEFICIARY_REGISTRY = {
+  'MH-2024-00123': {
     id: 'citizen_001',
     name: 'Ramesh Kumar',
     phone: '9876543210',
+    maskedPhone: '98765*****',
+    otp: '4521',
     rationCardNo: 'MH-2024-00123',
     role: ROLES.CITIZEN,
     shopId: 'shop_001',
+    shopName: 'Ram Ration Store',
     familySize: 4,
     district: 'Pune',
+    taluka: 'Haveli',
+    category: 'PHH',           // Priority Household
+    aadhaarLinked: true,
+    bankLinked: true,
+    registeredOn: '2024-01-15',
+    verificationStatus: 'verified',
   },
+  'MH-2024-00124': {
+    id: 'citizen_002',
+    name: 'Sunita Devi',
+    phone: '9823001122',
+    maskedPhone: '98230*****',
+    otp: '7834',
+    rationCardNo: 'MH-2024-00124',
+    role: ROLES.CITIZEN,
+    shopId: 'shop_001',
+    shopName: 'Ram Ration Store',
+    familySize: 3,
+    district: 'Pune',
+    taluka: 'Haveli',
+    category: 'AAY',           // Antyodaya Anna Yojana
+    aadhaarLinked: true,
+    bankLinked: false,
+    registeredOn: '2024-02-20',
+    verificationStatus: 'verified',
+  },
+  'MH-2024-00125': {
+    id: 'citizen_003',
+    name: 'Prakash Mane',
+    phone: '9765432100',
+    maskedPhone: '97654*****',
+    otp: '3390',
+    rationCardNo: 'MH-2024-00125',
+    role: ROLES.CITIZEN,
+    shopId: 'shop_002',
+    shopName: 'Shivaji Ration Centre',
+    familySize: 6,
+    district: 'Pune',
+    taluka: 'Haveli',
+    category: 'PHH',
+    aadhaarLinked: true,
+    bankLinked: true,
+    registeredOn: '2024-03-10',
+    verificationStatus: 'verified',
+  },
+  'MH-2024-00126': {
+    id: 'citizen_004',
+    name: 'Anita Bhosale',
+    phone: '9812345678',
+    maskedPhone: '98123*****',
+    otp: '6612',
+    rationCardNo: 'MH-2024-00126',
+    role: ROLES.CITIZEN,
+    shopId: 'shop_002',
+    shopName: 'Shivaji Ration Centre',
+    familySize: 2,
+    district: 'Pune',
+    taluka: 'Mulshi',
+    category: 'NPHH',          // Non-Priority Household
+    aadhaarLinked: false,
+    bankLinked: true,
+    registeredOn: '2024-04-05',
+    verificationStatus: 'pending_aadhaar',
+  },
+};
+
+// ─── Mock Users ──────────────────────────────────────────
+export const MOCK_USERS = {
+  citizen: BENEFICIARY_REGISTRY['MH-2024-00123'],
   dealer: {
     id: 'dealer_001',
     name: 'Suresh Patil',

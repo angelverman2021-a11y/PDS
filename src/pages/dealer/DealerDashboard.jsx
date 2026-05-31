@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import {
   Package, Users, ClipboardList, CheckCircle,
-  Truck, TrendingUp, AlertTriangle, QrCode,
+  Truck, TrendingUp, AlertTriangle, QrCode, Plus,
 } from 'lucide-react';
 import {
-  MOCK_USERS, MOCK_SHOPS, MOCK_BENEFICIARIES,
-  MOCK_DISTRIBUTION_LOGS,
+  MOCK_USERS, MOCK_SHOPS, MOCK_DISTRIBUTION_LOGS,
 } from '../../constants';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
+import DistributionFlow from '../../components/dealer/DistributionFlow';
+import Modal from '../../components/common/Modal';
 import toast from 'react-hot-toast';
 
 const TABS = [
@@ -146,195 +147,44 @@ function StockUpdateTab({ shop }) {
 }
 
 // ── Distribution Tab ─────────────────────────────────────
-function DistributionTab() {
-  const [beneficiaries, setBeneficiaries] = useState(MOCK_BENEFICIARIES);
-  const [receiptModal, setReceiptModal]   = useState(null);
-  const [filter, setFilter]               = useState('all');
-
-  const stats = {
-    total:        beneficiaries.length,
-    distributed:  beneficiaries.filter(b => b.status === 'distributed').length,
-    pending:      beneficiaries.filter(b => b.status === 'pending').length,
-    notCollected: beneficiaries.filter(b => b.status === 'not_collected').length,
-  };
-
-  const filtered = filter === 'all'
-    ? beneficiaries
-    : beneficiaries.filter(b => b.status === filter);
-
-  const updateStatus = (id, newStatus) => {
-    setBeneficiaries(prev =>
-      prev.map(b => b.id === id ? { ...b, status: newStatus } : b)
-    );
-    if (newStatus === 'distributed') {
-      toast.success('Marked as distributed');
-    }
-  };
-
-  const generateReceipt = (b) => {
-    setReceiptModal(b);
-    toast.success(`Receipt generated for ${b.name}`);
-  };
+function DistributionTab({ shop }) {
+  const [showFlow, setShowFlow] = useState(false);
 
   return (
-    <div className="space-y-5">
-      {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: 'Total',        value: stats.total,        color: 'gray' },
-          { label: 'Distributed',  value: stats.distributed,  color: 'green' },
-          { label: 'Pending',      value: stats.pending,      color: 'amber' },
-          { label: 'Not Collected',value: stats.notCollected, color: 'red' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className={`bg-${color}-50 border border-${color}-100 rounded-xl p-3 text-center`}>
-            <p className={`text-2xl font-bold text-${color}-700`}>{value}</p>
-            <p className={`text-xs text-${color}-600 mt-0.5`}>{label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Progress Bar */}
-      <div>
-        <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>Distribution Progress</span>
-          <span className="font-semibold text-green-700">
-            {Math.round((stats.distributed / stats.total) * 100)}%
-          </span>
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-gray-800">Distribute Rations</h3>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Each distribution requires beneficiary verification before a receipt is generated.
+          </p>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div
-            className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
-            style={{ width: `${(stats.distributed / stats.total) * 100}%` }}
-          />
-        </div>
+        <Button size="sm" variant="secondary" onClick={() => setShowFlow(true)}>
+          <Plus size={15} /> New Distribution
+        </Button>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {[
-          { key: 'all',           label: 'All' },
-          { key: 'pending',       label: 'Pending' },
-          { key: 'distributed',   label: 'Distributed' },
-          { key: 'not_collected', label: 'Not Collected' },
-        ].map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setFilter(key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              filter === key
-                ? 'bg-green-700 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800">
+        <p className="font-semibold mb-1">4-Step Verified Distribution Flow</p>
+        <ol className="space-y-1 text-xs text-blue-700 list-decimal list-inside">
+          <li>Verify beneficiary via Ration Card + OTP</li>
+          <li>System checks monthly allocation entitlement</li>
+          <li>Dealer confirms actual quantities distributed</li>
+          <li>System auto-generates digital receipt with QR code</li>
+        </ol>
       </div>
 
-      {/* Beneficiary List */}
-      <div className="space-y-2">
-        {filtered.map(b => (
-          <div
-            key={b.id}
-            className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 gap-3"
-          >
-            <div className="min-w-0">
-              <p className="font-medium text-gray-900 text-sm">{b.name}</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {b.rationCardNo} · Family of {b.familySize}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <Badge status={b.status} />
-
-              {b.status === 'pending' && (
-                <Button
-                  size="sm"
-                  onClick={() => updateStatus(b.id, 'distributed')}
-                >
-                  Mark Distributed
-                </Button>
-              )}
-
-              {b.status === 'distributed' && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => generateReceipt(b)}
-                >
-                  <QrCode size={14} /> Receipt
-                </Button>
-              )}
-
-              {b.status === 'not_collected' && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => updateStatus(b.id, 'pending')}
-                >
-                  Reset
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Receipt Modal */}
-      {receiptModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setReceiptModal(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <div className="text-center mb-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <QrCode size={32} className="text-green-700" />
-              </div>
-              <h3 className="font-bold text-gray-900 text-lg">Digital Receipt</h3>
-              <p className="text-xs text-gray-500 mt-1">July 2025 · Ram Ration Store</p>
-            </div>
-
-            {/* Mock QR */}
-            <div className="bg-gray-900 rounded-xl p-4 mb-4 flex items-center justify-center">
-              <div className="grid grid-cols-5 gap-1">
-                {Array.from({ length: 25 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-5 h-5 rounded-sm ${QR_CELLS[i] ? 'bg-white' : 'bg-gray-900'}`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-gray-50 rounded-xl p-3 space-y-2 text-sm mb-4">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Beneficiary</span>
-                <span className="font-medium">{receiptModal.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Ration Card</span>
-                <span className="font-medium">{receiptModal.rationCardNo}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Items</span>
-                <span className="font-medium">Wheat 10kg · Rice 5kg · Sugar 1kg</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Amount</span>
-                <span className="font-medium text-green-700">₹85</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">QR Code</span>
-                <span className="font-medium text-xs text-blue-600">QR-PDS-2025-07-{receiptModal.id}</span>
-              </div>
-            </div>
-
-            <Button fullWidth onClick={() => setReceiptModal(null)}>
-              Close
-            </Button>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={showFlow}
+        onClose={() => setShowFlow(false)}
+        title="New Distribution"
+      >
+        <DistributionFlow
+          shopId={shop?.id}
+          shopName={shop?.name}
+          onClose={() => setShowFlow(false)}
+        />
+      </Modal>
     </div>
   );
 }
@@ -475,7 +325,7 @@ export default function DealerDashboard() {
         {/* Tab Content */}
         <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           {activeTab === 'stock'        && <StockUpdateTab shop={shop} />}
-          {activeTab === 'distribution' && <DistributionTab />}
+          {activeTab === 'distribution' && <DistributionTab shop={shop} />}
           {activeTab === 'logs'         && <LogsTab />}
         </div>
 

@@ -408,37 +408,105 @@ export const MOCK_ALLOCATION = {
   collected:   { wheat_kg: 12, rice_kg: 0, sugar_kg: 1, kerosene_ltr: 2 },
 };
 
-// ─── Mock Receipts ───────────────────────────────────────
+// ─── Receipt Status ───────────────────────────────────────
+export const RECEIPT_STATUS = {
+  PENDING:   'pending',    // allocation exists, not yet distributed
+  GENERATED: 'generated', // distribution confirmed, receipt issued
+  VERIFIED:  'verified',  // citizen confirmed receipt via QR
+};
+
+// ─── Mock Receipts ────────────────────────────────────────
+// Receipts are generated ONLY after:
+// 1. Beneficiary Verification (OTP)
+// 2. Allocation Check (entitlement confirmed)
+// 3. Distribution Confirmation (dealer marks distributed)
+// 4. Receipt Generation (system auto-generates QR token)
 export const MOCK_RECEIPTS = [
   {
     id: 'rcpt_001',
     qrCode: 'QR-PDS-2025-07-001',
     month: 'July 2025',
+    monthKey: '2025-07',
+    shopId: 'shop_001',
     shopName: 'Ram Ration Store',
-    items: { wheat_kg: 10, rice_kg: 5, sugar_kg: 1, kerosene_ltr: 2 },
-    totalAmount: 85,
-    issuedAt: '2025-07-03',
-    isVerified: true,
+    dealerId: 'dealer_001',
+    citizenId: 'citizen_001',
+    rationCardNo: 'MH-2024-00123',
+    category: 'PHH',
+    familySize: 4,
+    // Items are dynamically computed — stored as distributed actuals
+    distributedItems: [
+      { id: 'wheat',    name: 'Wheat',       qty: 12, unit: 'kg',  pricePerUnit: 2,    total: 24  },
+      { id: 'sugar',    name: 'Sugar',       qty: 1,  unit: 'kg',  pricePerUnit: 13.5, total: 13.5},
+      { id: 'kerosene', name: 'Kerosene',    qty: 2,  unit: 'ltr', pricePerUnit: 15,   total: 30  },
+      { id: 'dal',      name: 'Chana Dal',   qty: 1,  unit: 'kg',  pricePerUnit: 20,   total: 20  },
+      { id: 'salt',     name: 'Iodised Salt',qty: 1,  unit: 'kg',  pricePerUnit: 2,    total: 2   },
+    ],
+    totalAmount: 89.5,
+    status: RECEIPT_STATUS.VERIFIED,
+    generatedAt: '2025-07-03T11:32:00',
+    verifiedAt:  '2025-07-04T14:10:00',
+    // Audit trail
+    verificationMethod: 'OTP',
+    dealerConfirmedAt:  '2025-07-03T11:30:00',
+    allocationChecked:  true,
+    isPartial: false,
   },
   {
     id: 'rcpt_002',
     qrCode: 'QR-PDS-2025-06-001',
     month: 'June 2025',
+    monthKey: '2025-06',
+    shopId: 'shop_001',
     shopName: 'Ram Ration Store',
-    items: { wheat_kg: 10, rice_kg: 5, sugar_kg: 1, kerosene_ltr: 2 },
-    totalAmount: 85,
-    issuedAt: '2025-06-05',
-    isVerified: true,
+    dealerId: 'dealer_001',
+    citizenId: 'citizen_001',
+    rationCardNo: 'MH-2024-00123',
+    category: 'PHH',
+    familySize: 4,
+    distributedItems: [
+      { id: 'wheat',    name: 'Wheat',       qty: 12, unit: 'kg',  pricePerUnit: 2,    total: 24  },
+      { id: 'rice',     name: 'Rice',        qty: 8,  unit: 'kg',  pricePerUnit: 3,    total: 24  },
+      { id: 'sugar',    name: 'Sugar',       qty: 1,  unit: 'kg',  pricePerUnit: 13.5, total: 13.5},
+      { id: 'kerosene', name: 'Kerosene',    qty: 2,  unit: 'ltr', pricePerUnit: 15,   total: 30  },
+      { id: 'dal',      name: 'Chana Dal',   qty: 1,  unit: 'kg',  pricePerUnit: 20,   total: 20  },
+      { id: 'salt',     name: 'Iodised Salt',qty: 1,  unit: 'kg',  pricePerUnit: 2,    total: 2   },
+    ],
+    totalAmount: 113.5,
+    status: RECEIPT_STATUS.VERIFIED,
+    generatedAt: '2025-06-05T10:15:00',
+    verifiedAt:  '2025-06-05T10:20:00',
+    verificationMethod: 'OTP',
+    dealerConfirmedAt:  '2025-06-05T10:12:00',
+    allocationChecked:  true,
+    isPartial: false,
   },
   {
     id: 'rcpt_003',
     qrCode: 'QR-PDS-2025-05-001',
     month: 'May 2025',
+    monthKey: '2025-05',
+    shopId: 'shop_001',
     shopName: 'Ram Ration Store',
-    items: { wheat_kg: 10, rice_kg: 3, sugar_kg: 1, kerosene_ltr: 0 },
-    totalAmount: 62,
-    issuedAt: '2025-05-08',
-    isVerified: true,
+    dealerId: 'dealer_001',
+    citizenId: 'citizen_001',
+    rationCardNo: 'MH-2024-00123',
+    category: 'PHH',
+    familySize: 4,
+    distributedItems: [
+      { id: 'wheat', name: 'Wheat', qty: 12, unit: 'kg', pricePerUnit: 2,  total: 24 },
+      { id: 'rice',  name: 'Rice',  qty: 5,  unit: 'kg', pricePerUnit: 3,  total: 15 },
+      { id: 'sugar', name: 'Sugar', qty: 1,  unit: 'kg', pricePerUnit: 13.5, total: 13.5 },
+      { id: 'salt',  name: 'Iodised Salt', qty: 1, unit: 'kg', pricePerUnit: 2, total: 2 },
+    ],
+    totalAmount: 54.5,
+    status: RECEIPT_STATUS.VERIFIED,
+    generatedAt: '2025-05-08T09:45:00',
+    verifiedAt:  '2025-05-08T09:50:00',
+    verificationMethod: 'Biometric',
+    dealerConfirmedAt:  '2025-05-08T09:42:00',
+    allocationChecked:  true,
+    isPartial: true, // rice was short
   },
 ];
 

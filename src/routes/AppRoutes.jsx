@@ -9,6 +9,7 @@ import ShopFinder from '../pages/public/ShopFinder';
 import ShopDetails from '../pages/public/ShopDetails';
 import QRVerification from '../pages/public/QRVerification';
 import ComplaintPortal from '../pages/public/ComplaintPortal';
+import DataSources from '../pages/public/DataSources';
 
 // Citizen Pages
 import CitizenDashboard from '../pages/citizen/Dashboard';
@@ -41,6 +42,7 @@ export default function AppRoutes() {
       <Route path="/verify" element={<QRVerification />} />
       <Route path="/complaints/new" element={<ComplaintPortal />} />
       <Route path="/complaints/track" element={<ComplaintTracker />} />
+      <Route path="/data-sources" element={<DataSources />} />
 
       {/* Citizen */}
       <Route path="/dashboard" element={

@@ -23,6 +23,7 @@ export default function Footer() {
               <Link to="/verify" className="hover:text-white transition-colors">Verify Receipt</Link>
               <Link to="/complaints/new" className="hover:text-white transition-colors">Report Corruption</Link>
               <Link to="/complaints/track" className="hover:text-white transition-colors">Track Complaint</Link>
+              <Link to="/data-sources" className="hover:text-white transition-colors">Data Sources</Link>
             </div>
           </div>
 

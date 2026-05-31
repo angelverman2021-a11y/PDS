@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { VERIFY_STATE } from '../context/AuthContext';
@@ -7,7 +7,7 @@ import Button from '../components/common/Button';
 import {
   Truck, User, Store, ShieldCheck,
   CheckCircle, XCircle, AlertTriangle,
-  Phone, CreditCard, Users, MapPin,
+  Phone, CreditCard, Users, MapPin, Lock, Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -129,8 +129,24 @@ export default function Login() {
   const [confirming, setConfirming] = useState(false);
 
   const { login, loading, verifyState, pendingBeneficiary,
-          validateRationCard, validateOTP, resetVerification } = useAuth();
+          validateRationCard, validateOTP, resetVerification,
+          otpAttempts, otpSentAt } = useAuth();
   const navigate = useNavigate();
+
+  // OTP countdown timer
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  useEffect(() => {
+    if (!otpSentAt) return;
+    const tick = setInterval(() => {
+      const remaining = Math.max(0, 300 - Math.floor((Date.now() - otpSentAt) / 1000));
+      setSecondsLeft(remaining);
+      if (remaining === 0) clearInterval(tick);
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [otpSentAt]);
+
+  const mins = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+  const secs = String(secondsLeft % 60).padStart(2, '0');
 
   const redirectMap = {
     [ROLES.CITIZEN]: '/dashboard',
@@ -241,6 +257,40 @@ export default function Login() {
                 />
               ) :
 
+              verifyState === VERIFY_STATE.LOCKED ? (
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center gap-3 py-6">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                      <Lock size={28} className="text-red-600" />
+                    </div>
+                    <p className="font-bold text-gray-900">Account Temporarily Locked</p>
+                    <p className="text-sm text-gray-500 text-center">
+                      Too many incorrect OTP attempts. Please try again after 30 minutes.
+                    </p>
+                  </div>
+                  <Button fullWidth variant="outline" onClick={() => { resetVerification(); setOtp(''); setRationCard(''); }}>
+                    Try Different Ration Card
+                  </Button>
+                </div>
+              ) :
+
+              verifyState === VERIFY_STATE.EXPIRED ? (
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center gap-3 py-6">
+                    <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center">
+                      <Clock size={28} className="text-amber-600" />
+                    </div>
+                    <p className="font-bold text-gray-900">OTP Expired</p>
+                    <p className="text-sm text-gray-500 text-center">
+                      Your OTP has expired. Please request a new one.
+                    </p>
+                  </div>
+                  <Button fullWidth onClick={() => { resetVerification(); setOtp(''); }}>
+                    Request New OTP
+                  </Button>
+                </div>
+              ) :
+
               // Step 2: OTP entry
               verifyState === VERIFY_STATE.OTP_SENT ? (
                 <form onSubmit={handleVerifyOTP} className="space-y-4">
@@ -249,10 +299,26 @@ export default function Login() {
                     OTP sent to <strong>{maskedPhone}</strong>
                   </div>
 
+                  {/* Countdown */}
+                  <div className={`flex items-center justify-between text-xs px-3 py-2 rounded-lg ${
+                    secondsLeft < 60 ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-500'
+                  }`}>
+                    <span className="flex items-center gap-1">
+                      <Clock size={12} /> OTP expires in
+                    </span>
+                    <span className="font-bold font-mono">{mins}:{secs}</span>
+                  </div>
+
+                  {/* Attempts */}
+                  {otpAttempts > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-700 flex items-center gap-1">
+                      <AlertTriangle size={12} />
+                      {3 - otpAttempts} attempt{3 - otpAttempts !== 1 ? 's' : ''} remaining before account lock
+                    </div>
+                  )}
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Enter OTP
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP</label>
                     <input
                       type="text"
                       value={otp}
@@ -276,7 +342,7 @@ export default function Login() {
                     </p>
                   </div>
 
-                  <Button type="submit" fullWidth loading={loading} size="lg">
+                  <Button type="submit" fullWidth loading={loading} size="lg" disabled={secondsLeft === 0}>
                     Verify OTP
                   </Button>
                   <button

@@ -9,15 +9,20 @@ export const VERIFY_STATE = {
   VERIFIED:     'verified',
   INVALID_CARD: 'invalid_card',
   INVALID_OTP:  'invalid_otp',
+  LOCKED:       'locked',   // too many wrong OTP attempts
+  EXPIRED:      'expired',  // OTP expired after 5 minutes
 };
 
-export function AuthProvider({ children }) {
-  const [user, setUser]       = useState(null);
-  const [loading, setLoading] = useState(false);
+const OTP_EXPIRY_MS  = 5 * 60 * 1000; // 5 minutes
+const MAX_OTP_TRIES  = 3;
 
-  // Citizen verification state
-  const [verifyState, setVerifyState]         = useState(VERIFY_STATE.IDLE);
-  const [pendingBeneficiary, setPending]      = useState(null);
+export function AuthProvider({ children }) {
+  const [user, setUser]             = useState(null);
+  const [loading, setLoading]       = useState(false);
+  const [verifyState, setVerifyState]     = useState(VERIFY_STATE.IDLE);
+  const [pendingBeneficiary, setPending]  = useState(null);
+  const [otpSentAt, setOtpSentAt]         = useState(null);
+  const [otpAttempts, setOtpAttempts]     = useState(0);
 
   // ── Step 1: Validate ration card ─────────────────────────
   const validateRationCard = (rationCardNo) => {
@@ -31,6 +36,8 @@ export function AuthProvider({ children }) {
           resolve({ success: false, reason: 'not_found' });
         } else {
           setPending(beneficiary);
+          setOtpSentAt(Date.now());
+          setOtpAttempts(0);
           setVerifyState(VERIFY_STATE.OTP_SENT);
           resolve({ success: true, maskedPhone: beneficiary.maskedPhone });
         }
@@ -44,13 +51,36 @@ export function AuthProvider({ children }) {
       setLoading(true);
       setTimeout(() => {
         setLoading(false);
+
         if (!pendingBeneficiary) {
           resolve({ success: false, reason: 'no_pending' });
           return;
         }
+
+        // Check expiry
+        if (Date.now() - otpSentAt > OTP_EXPIRY_MS) {
+          setVerifyState(VERIFY_STATE.EXPIRED);
+          resolve({ success: false, reason: 'OTP expired. Please request a new one.' });
+          return;
+        }
+
+        // Check lock
+        if (otpAttempts >= MAX_OTP_TRIES) {
+          setVerifyState(VERIFY_STATE.LOCKED);
+          resolve({ success: false, reason: 'Too many attempts. Please try again after 30 minutes.' });
+          return;
+        }
+
         if (otp.trim() !== pendingBeneficiary.otp) {
-          setVerifyState(VERIFY_STATE.INVALID_OTP);
-          resolve({ success: false, reason: 'wrong_otp' });
+          const newAttempts = otpAttempts + 1;
+          setOtpAttempts(newAttempts);
+          if (newAttempts >= MAX_OTP_TRIES) {
+            setVerifyState(VERIFY_STATE.LOCKED);
+            resolve({ success: false, reason: `Account locked after ${MAX_OTP_TRIES} failed attempts.` });
+          } else {
+            setVerifyState(VERIFY_STATE.INVALID_OTP);
+            resolve({ success: false, reason: `Incorrect OTP. ${MAX_OTP_TRIES - newAttempts} attempt(s) remaining.` });
+          }
         } else {
           setVerifyState(VERIFY_STATE.VERIFIED);
           setUser(pendingBeneficiary);
@@ -73,17 +103,22 @@ export function AuthProvider({ children }) {
     setUser(null);
     setVerifyState(VERIFY_STATE.IDLE);
     setPending(null);
+    setOtpSentAt(null);
+    setOtpAttempts(0);
   };
 
   const resetVerification = () => {
     setVerifyState(VERIFY_STATE.IDLE);
     setPending(null);
+    setOtpSentAt(null);
+    setOtpAttempts(0);
   };
 
   return (
     <AuthContext.Provider value={{
       user, loading,
       verifyState, pendingBeneficiary,
+      otpAttempts, otpSentAt,
       validateRationCard, validateOTP,
       login, logout, resetVerification,
     }}>

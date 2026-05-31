@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AlertTriangle, Store, FileText, Upload, CheckCircle, Copy } from 'lucide-react';
-import { MOCK_SHOPS, COMPLAINT_CATEGORIES } from '../../constants';
+import { COMPLAINT_CATEGORIES } from '../../constants';
+import { getRegisteredFpsShops } from '../../services/shopService';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import toast from 'react-hot-toast';
@@ -18,16 +20,25 @@ function generateComplaintNo() {
 }
 
 export default function ComplaintPortal() {
-  const [step, setStep]               = useState(1);
-  const [shopId, setShopId]           = useState('');
-  const [category, setCategory]       = useState('');
-  const [description, setDescription] = useState('');
+  const location = useLocation();
+  const prefill = location.state?.prefill || {};
+  const initialStep = prefill.description && prefill.category && prefill.shopId
+    ? 3
+    : prefill.category && prefill.shopId
+    ? 2
+    : 1;
+
+  const [step, setStep]               = useState(initialStep);
+  const [shopId, setShopId]           = useState(prefill.shopId || '');
+  const [category, setCategory]       = useState(prefill.category || '');
+  const [description, setDescription] = useState(prefill.description || '');
   const [fileName, setFileName]       = useState('');
   const [submitted, setSubmitted]     = useState(false);
   const [complaintNo, setComplaintNo] = useState('');
   const [loading, setLoading]         = useState(false);
 
-  const selectedShop = MOCK_SHOPS.find(s => s.id === shopId);
+  const availableShops = getRegisteredFpsShops();
+  const selectedShop = availableShops.find(s => s.id === shopId);
 
   // ── Step validators ──────────────────────────────────────
   const canNext = () => {
@@ -189,7 +200,12 @@ export default function ComplaintPortal() {
                 <p className="text-sm text-gray-500 mb-4">Select the Fair Price Shop related to your complaint.</p>
               </div>
               <div className="space-y-2">
-                {MOCK_SHOPS.map(shop => (
+                {availableShops.length === 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+                    Real shop data unavailable for this location. Configure Google Places, OpenStreetMap, or an authorized FPS dataset before filing shop-specific complaints.
+                  </div>
+                )}
+                {availableShops.map(shop => (
                   <button
                     key={shop.id}
                     onClick={() => setShopId(shop.id)}

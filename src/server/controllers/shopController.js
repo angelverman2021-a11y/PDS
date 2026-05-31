@@ -5,8 +5,8 @@ export const ShopController = {
     return { status: 200, body: { shops: getRegisteredFpsShops() } };
   },
 
-  search({ query }) {
-    const result = searchShopsByPincode({
+  async search({ query }) {
+    const result = await searchShopsByPincode({
       pincode: query.pincode,
       userLocation: query.lat && query.lng
         ? { latitude: Number(query.lat), longitude: Number(query.lng) }

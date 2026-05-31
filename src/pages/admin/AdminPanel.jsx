@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   ClipboardList, ScrollText, Filter, Search,
   CheckCircle, AlertTriangle, ChevronDown, User,
-  Store, Calendar, FileText, ShieldAlert, Clock,
+  Store, Calendar, FileText, ShieldAlert, Clock, Terminal,
 } from 'lucide-react';
 import {
   MOCK_COMPLAINTS, MOCK_AUDIT_LOGS, MOCK_USERS,
@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 const TABS = [
   { id: 'complaints', label: 'Complaint Queue', icon: ClipboardList },
   { id: 'audit',      label: 'Audit Logs',      icon: ScrollText },
+  { id: 'integrity',  label: 'System Integrity', icon: Terminal },
 ];
 
 const STATUS_FILTERS = [
@@ -499,6 +500,105 @@ function AuditLogsTab() {
   );
 }
 
+// ── System Integrity Tab ──────────────────────────────────
+function IntegrityTab() {
+  const [scanHistory, setScanHistory] = useState([]);
+  const [scanRunning, setScanRunning] = useState(false);
+  const [scanComplete, setScanComplete] = useState(false);
+
+  const ledgerTimeline = [
+    { id: 'TX-5892', action: 'Receipt Issued', timestamp: '2025-07-14 09:22', hash: '8f4c63b1a47d...2d9c' },
+    { id: 'TX-5893', action: 'Allocation Logged', timestamp: '2025-07-14 09:03', hash: 'b12a9f4c3d80...1f02' },
+    { id: 'TX-5894', action: 'Shop Confirmed', timestamp: '2025-07-14 09:30', hash: 'e2b47c8d6f12...a4b7' },
+    { id: 'TX-5895', action: 'Ledger Anchored', timestamp: '2025-07-14 09:35', hash: '9a7f4c3b1d6e...c8a1' },
+  ];
+
+  const scanSteps = [
+    'Initializing integrity engine...',
+    'Checking block 0x4F9A... ',
+    'Validating structural seals...',
+    'Reconciling distributed ledger snapshot...',
+    'Verifying transaction hash chain...',
+    'Finalizing scan results...',
+  ];
+
+  const handleRunScan = () => {
+    if (scanRunning) return;
+    setScanHistory([]);
+    setScanComplete(false);
+    setScanRunning(true);
+
+    let index = 0;
+    const interval = setInterval(() => {
+      setScanHistory((prev) => [...prev, scanSteps[index]]);
+      index += 1;
+      if (index >= scanSteps.length) {
+        clearInterval(interval);
+        setScanRunning(false);
+        setScanComplete(true);
+      }
+    }, 300);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">System Integrity & Cryptographic Logs</p>
+          <p className="text-xs text-gray-500 mt-1 max-w-2xl">
+            Immutable ledger entries and simulated SHA-256 verification for critical PDS transactions.
+          </p>
+        </div>
+        <button
+          onClick={handleRunScan}
+          className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+            scanRunning ? 'bg-slate-500 text-white' : 'bg-purple-700 text-white hover:bg-purple-800'
+          }`}
+        >
+          <Terminal size={16} />
+          {scanRunning ? 'Scanning...' : 'Execute System-Wide Integrity Scan'}
+        </button>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-3xl border border-slate-200 bg-slate-950 p-5 text-slate-100 shadow-sm">
+          <p className="text-sm font-semibold text-white mb-4">Terminal Scan Output</p>
+          <div className="min-h-[220px] rounded-3xl border border-slate-800 bg-slate-900 p-4 text-xs font-mono leading-6 text-emerald-200">
+            {scanHistory.length === 0 ? (
+              <p className="text-slate-500">Press the scan button to begin cryptographic inspection.</p>
+            ) : (
+              scanHistory.map((line, index) => (
+                <p key={index} className={scanRunning ? 'animate-pulse' : ''}>{line}</p>
+              ))
+            )}
+          </div>
+          {scanComplete && (
+            <div className="mt-4 rounded-3xl bg-emerald-50 border border-emerald-100 p-4 text-emerald-900">
+              <p className="font-semibold">Scan Complete: 0 anomalies found. Local ledger matches distributed state database.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          {ledgerTimeline.map((entry) => (
+            <div key={entry.id} className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <span className="absolute right-4 top-4 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-emerald-700">
+                SHA-256 Verified
+              </span>
+              <p className="text-xs text-slate-500 uppercase tracking-[0.24em]">{entry.id}</p>
+              <p className="text-sm font-semibold text-gray-900 mt-2">{entry.action}</p>
+              <p className="text-xs text-slate-500 mt-1">{entry.timestamp}</p>
+              <div className="mt-3 rounded-2xl bg-slate-950 px-3 py-3 text-[11px] font-mono text-emerald-200">
+                {entry.hash}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Admin Panel ──────────────────────────────────────
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState('complaints');
@@ -548,6 +648,7 @@ export default function AdminPanel() {
         <Card>
           {activeTab === 'complaints' && <ComplaintsTab />}
           {activeTab === 'audit'      && <AuditLogsTab />}
+          {activeTab === 'integrity'  && <IntegrityTab />}
         </Card>
       </div>
     </div>

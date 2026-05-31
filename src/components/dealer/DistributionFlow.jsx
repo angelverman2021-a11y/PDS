@@ -54,7 +54,7 @@ function Step1Verify({ onSuccess }) {
         Enter the beneficiary's ration card number and their registered OTP to begin distribution.
       </p>
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-        <strong>Demo cards:</strong> MH-2024-00123 (OTP: 4521) · MH-2024-00124 (OTP: 7834)
+        <strong>Demo mode:</strong> beneficiary verification uses only pre-approved test numbers. OTP values are not shown in the UI.
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Ration Card Number</label>

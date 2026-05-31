@@ -236,25 +236,176 @@ export const MOCK_SHOPS = [
   },
 ];
 
-// ─── Mock Allocation ─────────────────────────────────────
+// ─── Ration Product Catalog ──────────────────────────────
+// Each product has a unit, price, and per-person/per-household rate.
+// This drives allocation dynamically — add any new item here.
+export const RATION_PRODUCTS = [
+  {
+    id: 'wheat',
+    name: 'Wheat',
+    unit: 'kg',
+    pricePerUnit: 2,
+    icon: '🌾',
+    allocationType: 'per_person',   // multiplied by family size
+    color: 'amber',
+  },
+  {
+    id: 'rice',
+    name: 'Rice',
+    unit: 'kg',
+    pricePerUnit: 3,
+    icon: '🍚',
+    allocationType: 'per_person',
+    color: 'blue',
+  },
+  {
+    id: 'sugar',
+    name: 'Sugar',
+    unit: 'kg',
+    pricePerUnit: 13.5,
+    icon: '🧂',
+    allocationType: 'per_household', // fixed per household
+    color: 'pink',
+  },
+  {
+    id: 'kerosene',
+    name: 'Kerosene',
+    unit: 'ltr',
+    pricePerUnit: 15,
+    icon: '🛢️',
+    allocationType: 'per_household',
+    color: 'gray',
+  },
+  {
+    id: 'dal',
+    name: 'Chana Dal',
+    unit: 'kg',
+    pricePerUnit: 20,
+    icon: '🫘',
+    allocationType: 'per_household',
+    color: 'yellow',
+  },
+  {
+    id: 'salt',
+    name: 'Iodised Salt',
+    unit: 'kg',
+    pricePerUnit: 2,
+    icon: '🧂',
+    allocationType: 'per_household',
+    color: 'gray',
+  },
+];
+
+// ─── Category Entitlement Rules ───────────────────────────
+// Defines how much of each product each category gets.
+// per_person: qty × familySize | per_household: fixed qty
+// Follows NFSA 2013 guidelines.
+export const CATEGORY_ENTITLEMENTS = {
+  PHH: {
+    // Priority Household — 5kg/person/month
+    label: 'Priority Household (PHH)',
+    wheat:    { qty: 3,    type: 'per_person'    },
+    rice:     { qty: 2,    type: 'per_person'    },
+    sugar:    { qty: 1,    type: 'per_household' },
+    kerosene: { qty: 2,    type: 'per_household' },
+    dal:      { qty: 1,    type: 'per_household' },
+    salt:     { qty: 1,    type: 'per_household' },
+  },
+  AAY: {
+    // Antyodaya Anna Yojana — 35kg/household/month
+    label: 'Antyodaya Anna Yojana (AAY)',
+    wheat:    { qty: 20,   type: 'per_household' },
+    rice:     { qty: 15,   type: 'per_household' },
+    sugar:    { qty: 2,    type: 'per_household' },
+    kerosene: { qty: 3,    type: 'per_household' },
+    dal:      { qty: 2,    type: 'per_household' },
+    salt:     { qty: 1,    type: 'per_household' },
+  },
+  NPHH: {
+    // Non-Priority Household
+    label: 'Non-Priority Household (NPHH)',
+    wheat:    { qty: 2,    type: 'per_person'    },
+    rice:     { qty: 1,    type: 'per_person'    },
+    sugar:    { qty: 0.5,  type: 'per_household' },
+    kerosene: { qty: 1,    type: 'per_household' },
+    dal:      { qty: 0,    type: 'per_household' },
+    salt:     { qty: 1,    type: 'per_household' },
+  },
+};
+
+// ─── Allocation Calculator ────────────────────────────────
+// Pure function — computes entitlement for any beneficiary.
+// Returns array of { product, entitledQty, unit, price }
+export function computeAllocation(category, familySize) {
+  const rules = CATEGORY_ENTITLEMENTS[category];
+  if (!rules) return [];
+  return RATION_PRODUCTS
+    .map(product => {
+      const rule = rules[product.id];
+      if (!rule) return null;
+      const qty = rule.type === 'per_person'
+        ? rule.qty * familySize
+        : rule.qty;
+      if (qty === 0) return null;
+      return {
+        ...product,
+        entitledQty: qty,
+        totalPrice: +(qty * product.pricePerUnit).toFixed(2),
+      };
+    })
+    .filter(Boolean);
+}
+
+// ─── Mock Collected Data (per beneficiary per month) ──────
+// In production this comes from ePOS distribution records.
+export const MOCK_COLLECTED = {
+  'citizen_001': {
+    month: '2025-07',
+    wheat:    { collected: 12, status: 'collected'     },
+    rice:     { collected: 0,  status: 'pending'       },
+    sugar:    { collected: 1,  status: 'collected'     },
+    kerosene: { collected: 2,  status: 'collected'     },
+    dal:      { collected: 0,  status: 'pending'       },
+    salt:     { collected: 1,  status: 'collected'     },
+  },
+  'citizen_002': {
+    month: '2025-07',
+    wheat:    { collected: 20, status: 'collected'     },
+    rice:     { collected: 15, status: 'collected'     },
+    sugar:    { collected: 2,  status: 'collected'     },
+    kerosene: { collected: 0,  status: 'pending'       },
+    dal:      { collected: 2,  status: 'collected'     },
+    salt:     { collected: 1,  status: 'collected'     },
+  },
+  'citizen_003': {
+    month: '2025-07',
+    wheat:    { collected: 0,  status: 'pending'       },
+    rice:     { collected: 0,  status: 'pending'       },
+    sugar:    { collected: 0,  status: 'pending'       },
+    kerosene: { collected: 0,  status: 'pending'       },
+    dal:      { collected: 0,  status: 'pending'       },
+    salt:     { collected: 0,  status: 'pending'       },
+  },
+  'citizen_004': {
+    month: '2025-07',
+    wheat:    { collected: 4,  status: 'partial'       },
+    rice:     { collected: 1,  status: 'partial'       },
+    sugar:    { collected: 0,  status: 'pending'       },
+    kerosene: { collected: 1,  status: 'collected'     },
+    dal:      { collected: 0,  status: 'not_collected' },
+    salt:     { collected: 1,  status: 'collected'     },
+  },
+};
+
+// ─── Mock Allocation (legacy — kept for receipt pages) ────
 export const MOCK_ALLOCATION = {
   citizenId: 'citizen_001',
   month: '2025-07',
   shopName: 'Ram Ration Store',
   collectionWindow: '1 July 2025 – 31 July 2025',
   status: ALLOCATION_STATUS.PARTIAL,
-  entitlement: {
-    wheat_kg: 10,
-    rice_kg: 5,
-    sugar_kg: 1,
-    kerosene_ltr: 2,
-  },
-  collected: {
-    wheat_kg: 10,
-    rice_kg: 0,
-    sugar_kg: 1,
-    kerosene_ltr: 2,
-  },
+  entitlement: { wheat_kg: 12, rice_kg: 8, sugar_kg: 1, kerosene_ltr: 2 },
+  collected:   { wheat_kg: 12, rice_kg: 0, sugar_kg: 1, kerosene_ltr: 2 },
 };
 
 // ─── Mock Receipts ───────────────────────────────────────

@@ -1,5 +1,5 @@
 import { calculateDistanceKm, generateMapsLink } from './geoService';
-import { SHOP_DATA_PROVIDER } from '../config/platformConfig';
+import { FPS_DATASET_URL, SHOP_DATA_PROVIDER } from '../config/platformConfig';
 import { MOCK_SHOPS, STOCK_STATUS } from '../constants';
 
 const PINCODE_COORDINATES = {
@@ -26,19 +26,22 @@ export function getRegisteredFpsShops() {
 }
 
 function normalizeShopResult(shop) {
+  const latitude = Number(shop.latitude || shop.lat || shop.geometry?.location?.lat || 0);
+  const longitude = Number(shop.longitude || shop.lon || shop.geometry?.location?.lng || 0);
+
   return {
-    id: shop.id || shop.place_id || shop.osm_id || `${shop.latitude}-${shop.longitude}`,
-    fpsId: shop.fpsId || shop.place_id || shop.id,
-    name: shop.name,
-    address: shop.address || shop.formatted_address || shop.display_name || 'Unknown address',
+    id: shop.id || shop.fpsId || shop.place_id || shop.osm_id || `${latitude}-${longitude}`,
+    fpsId: shop.fpsId || shop.fps_id || shop.licenseNo || shop.place_id || shop.id || 'FPS ID unavailable',
+    name: shop.name || shop.shopName || shop.fpsName || 'Registered ration shop',
+    address: shop.address || shop.fullAddress || shop.formatted_address || shop.display_name || 'Unknown address',
     phone: shop.phone || shop.formatted_phone_number || shop.telephone || 'Not available',
     rating: typeof shop.rating === 'number' ? shop.rating : 4.0,
     reviewCount: shop.user_ratings_total || shop.reviewCount || 10,
     isOpen: typeof shop.isOpen === 'boolean' ? shop.isOpen : true,
     stockStatus: shop.stockStatus || STOCK_STATUS.AVAILABLE,
-    latitude: Number(shop.latitude || shop.lat || shop.geometry?.location?.lat || 0),
-    longitude: Number(shop.longitude || shop.lon || shop.geometry?.location?.lng || 0),
-    mapsLink: shop.mapsLink || generateMapsLink({ latitude: Number(shop.latitude || shop.lat), longitude: Number(shop.longitude || shop.lon) }),
+    latitude,
+    longitude,
+    mapsLink: shop.mapsLink || shop.mapUrl || shop.googleMapsUrl || generateMapsLink({ latitude, longitude }),
     lastDelivery: shop.lastDelivery || 'Updated recently',
     complaintCount: shop.complaintCount ?? 0,
     totalBeneficiaries: shop.totalBeneficiaries ?? 0,
@@ -46,6 +49,42 @@ function normalizeShopResult(shop) {
     dealerName: shop.dealerName || shop.name,
     recommendationReason: shop.recommendationReason || 'Matched from real location data',
   };
+}
+
+function shopMatchesPincode(shop, pincode) {
+  const haystack = `${shop.pincode || ''} ${shop.address || ''} ${shop.fullAddress || ''} ${shop.display_name || ''}`;
+  return haystack.includes(String(pincode));
+}
+
+async function searchFpsDataset({ pincode, limit }) {
+  if (!FPS_DATASET_URL) {
+    return { ok: false, error: 'FPS_DATASET_NOT_CONFIGURED', shops: [] };
+  }
+
+  const result = await fetch(FPS_DATASET_URL);
+  if (!result.ok) {
+    return { ok: false, error: 'FPS_DATASET_REQUEST_FAILED', shops: [] };
+  }
+
+  const data = await result.json();
+  const records = Array.isArray(data) ? data : data.shops || data.records || [];
+  if (!Array.isArray(records)) {
+    return { ok: false, error: 'FPS_DATASET_INVALID_FORMAT', shops: [] };
+  }
+
+  const shops = records
+    .filter(shop => shopMatchesPincode(shop, pincode))
+    .slice(0, limit)
+    .map(shop => ({
+      ...shop,
+      recommendationReason: 'Authorized FPS dataset result',
+    }));
+
+  if (shops.length === 0) {
+    return { ok: false, error: 'FPS_DATASET_NO_RESULTS', shops: [] };
+  }
+
+  return { ok: true, provider: 'authorized_fps_dataset', shops };
 }
 
 async function searchGooglePlaces({ pincode, limit }) {
@@ -125,6 +164,11 @@ async function searchNominatim({ pincode, limit }) {
 async function searchExternalShopProvider({ pincode, limit = 10 }) {
   if (!validatePincode(pincode)) {
     return { ok: false, error: 'PINCODE_INVALID', shops: [] };
+  }
+
+  const fpsResult = await searchFpsDataset({ pincode, limit });
+  if (fpsResult.ok && fpsResult.shops.length > 0) {
+    return fpsResult;
   }
 
   const googleCandidate = SHOP_DATA_PROVIDER === 'google_places' || import.meta.env.VITE_GOOGLE_PLACES_API_KEY;

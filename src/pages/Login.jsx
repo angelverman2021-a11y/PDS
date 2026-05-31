@@ -379,6 +379,10 @@ export default function Login() {
               // Step 1: Ration card entry
               (
                 <div className="space-y-4">
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 leading-relaxed">
+                    Demo note: this prototype verifies against sample records only. In production, OTP must be sent by a backend SMS provider after checking the ration card and registered mobile number from the official beneficiary registry. This app does not verify email identity.
+                  </div>
+
                   <form onSubmit={handleSendOTP} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">

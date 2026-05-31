@@ -50,7 +50,7 @@ export default function ShopFinder() {
           </div>
           <h1 className="text-2xl md:text-3xl font-bold mb-5">Find Ration Shops</h1>
           <p className="text-green-100 text-sm mb-4 max-w-2xl">
-            Search only returns externally sourced shop records from Google Places, OpenStreetMap, or authorized FPS datasets.
+            Search only returns externally sourced records. Add an authorized FPS dataset URL for official shop records, or use map providers for public place discovery.
           </p>
 
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
@@ -107,9 +107,14 @@ export default function ShopFinder() {
 
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6 flex items-start gap-3">
           <Database size={18} className="text-blue-700 shrink-0 mt-0.5" />
-          <p className="text-sm text-blue-800 leading-relaxed">
-            Real shop discovery must source shop name, full address, coordinates, ratings, reviews, maps URL, and phone from Google Places, OpenStreetMap, or authorized FPS datasets. This page does not invent shops.
-          </p>
+          <div className="text-sm text-blue-800 leading-relaxed space-y-1">
+            <p>
+              This page does not invent ration shops. Real shop records must come from an authorized FPS dataset, Google Places, or OpenStreetMap.
+            </p>
+            <p className="text-xs text-blue-700">
+              Recommended real-data path: set <strong>VITE_FPS_DATASET_URL</strong> to a JSON file/API containing shop name, FPS ID, full address, pincode, coordinates, phone, and map URL.
+            </p>
+          </div>
         </div>
 
         {!serviceResult.ok && pincode.length === 6 && (
@@ -124,7 +129,7 @@ export default function ShopFinder() {
           <div className="text-center py-20">
             <Store size={48} className="mx-auto text-gray-300 mb-3" />
             <p className="text-gray-500 font-medium">Real shop data unavailable for this location.</p>
-            <p className="text-gray-400 text-sm mt-1">Configure Google Places, OpenStreetMap, or an FPS dataset provider to display real shops.</p>
+            <p className="text-gray-400 text-sm mt-1">Configure an authorized FPS dataset URL or a map provider to display real shop records.</p>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

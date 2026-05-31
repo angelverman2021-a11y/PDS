@@ -19,13 +19,15 @@ export async function sendOtp({ phone }) {
   const normalizedPhone = normalizePhoneNumber(phone);
 
   if (DEMO_MODE) {
-    if (!APPROVED_DEMO_TEST_NUMBERS[normalizedPhone]) {
+    const demoRecord = APPROVED_DEMO_TEST_NUMBERS[normalizedPhone];
+    if (!demoRecord) {
       return { ok: false, error: 'DEMO_NUMBER_NOT_APPROVED' };
     }
     return {
       ok: true,
       provider: 'demo',
       verificationId: `demo_${Date.now()}`,
+      otp: demoRecord.otp,
       message: 'Demo OTP Mode Enabled. OTP sent only for an approved test number.',
     };
   }

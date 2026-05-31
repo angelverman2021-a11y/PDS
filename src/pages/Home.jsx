@@ -16,6 +16,13 @@ const stats = [
   { label: 'Verifications Done',   value: '2.1 Crore', icon: QrCode,      color: 'amber' },
 ];
 
+const statColorClasses = {
+  green: 'bg-green-500/20 text-green-400',
+  blue: 'bg-blue-500/20 text-blue-400',
+  purple: 'bg-purple-500/20 text-purple-400',
+  amber: 'bg-amber-500/20 text-amber-400',
+};
+
 const features = [
   {
     icon: QrCode,
@@ -39,6 +46,21 @@ const features = [
     color: 'red',
   },
 ];
+
+const featureColorClasses = {
+  green: {
+    bg: 'bg-green-100',
+    text: 'text-green-600',
+  },
+  blue: {
+    bg: 'bg-blue-100',
+    text: 'text-blue-600',
+  },
+  red: {
+    bg: 'bg-red-100',
+    text: 'text-red-600',
+  },
+};
 
 const steps = [
   { step: '01', title: 'Login Securely', desc: 'Use your Ration Card number and OTP to access your account.' },
@@ -194,8 +216,8 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {stats.map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="space-y-2">
-              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-${color}-500/20 mx-auto`}>
-                <Icon size={22} className={`text-${color}-400`} />
+              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mx-auto ${statColorClasses[color]}`}>
+                <Icon size={22} />
               </div>
               <p className="text-3xl font-extrabold text-white">{value}</p>
               <p className="text-sm text-gray-400">{label}</p>
@@ -278,22 +300,25 @@ export default function Home() {
             <p className="text-gray-500 max-w-xl mx-auto">Everything you need to ensure your ration rights are protected.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {features.map(({ icon: Icon, title, desc, to, color }) => (
-              <Link
-                key={title}
-                to={to}
-                className="group bg-white rounded-2xl p-7 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all"
-              >
-                <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-${color}-100 mb-5`}>
-                  <Icon size={26} className={`text-${color}-600`} />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-4">{desc}</p>
-                <span className={`inline-flex items-center gap-1 text-${color}-600 text-sm font-semibold group-hover:gap-2 transition-all`}>
-                  Learn more <ArrowRight size={14} />
-                </span>
-              </Link>
-            ))}
+            {features.map(({ icon: Icon, title, desc, to, color }) => {
+              const colorClasses = featureColorClasses[color];
+              return (
+                <Link
+                  key={title}
+                  to={to}
+                  className="group bg-white rounded-2xl p-7 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all"
+                >
+                  <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-5 ${colorClasses.bg}`}>
+                    <Icon size={26} className={colorClasses.text} />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed mb-4">{desc}</p>
+                  <span className={`inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all ${colorClasses.text}`}>
+                    Learn more <ArrowRight size={14} />
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -494,16 +519,17 @@ export default function Home() {
             <div>
               <div className="inline-flex items-center gap-2 text-green-700 font-semibold text-sm mb-3">
                 <BadgeCheck size={16} />
-                100/100 Readiness
+                Prototype Readiness
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Production-ready story, without pretending the prototype is production.</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">A strong demo foundation with a clear path to production.</h2>
               <p className="text-gray-600 max-w-2xl">
-                The platform now shows the final deployment, compliance, privacy, resilience, and accessibility evidence a national-level judge would expect.
+                The platform presents the core user journeys, privacy approach, resilience planning, and integration points needed for a credible PDS transparency system.
               </p>
             </div>
             <div className="rounded-2xl bg-green-700 text-white px-6 py-4 text-center">
-              <p className="text-xs text-green-100 font-semibold">FINAL DEMO SCORE</p>
-              <p className="text-4xl font-extrabold">100/100</p>
+              <p className="text-xs text-green-100 font-semibold">PROJECT STAGE</p>
+              <p className="text-3xl font-extrabold">Demo Ready</p>
+              <p className="text-xs text-green-100 mt-1">Mock data prototype</p>
             </div>
           </div>
 

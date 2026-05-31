@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
-import { ArrowLeft, PlusCircle, CalendarDays, ClipboardList, MapPin } from 'lucide-react';
+import { ArrowLeft, PlusCircle, CalendarDays, ClipboardList } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 
@@ -17,19 +17,16 @@ export default function RationDiary() {
   const { user } = useAuth();
   const storageKey = `rationDiary_${user?.id || 'guest'}`;
 
-  const [entries, setEntries] = useState([]);
-  const [entry, setEntry] = useState(DEFAULT_ENTRY);
-
-  useEffect(() => {
+  const [entries, setEntries] = useState(() => {
     const saved = window.localStorage.getItem(storageKey);
-    if (saved) {
-      try {
-        setEntries(JSON.parse(saved));
-      } catch (error) {
-        setEntries([]);
-      }
+    if (!saved) return [];
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return [];
     }
-  }, [storageKey]);
+  });
+  const [entry, setEntry] = useState(DEFAULT_ENTRY);
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(entries));

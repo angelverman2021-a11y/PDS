@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import {
   FileText, QrCode, AlertTriangle, Store,
   Package, CheckCircle, Clock, TrendingUp,
-  ArrowRight, ShieldCheck,
+  ArrowRight, ShieldCheck, ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
 import { MOCK_ALLOCATION, MOCK_RECEIPTS, MOCK_COMPLAINTS, MOCK_SHOPS } from '../../constants';

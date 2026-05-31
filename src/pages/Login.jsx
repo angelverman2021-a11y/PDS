@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { VERIFY_STATE } from '../context/authConstants';
 import { ROLES, USER_CREDENTIALS, MOCK_USERS } from '../constants';
+import { DEMO_MODE } from '../config/platformConfig';
 import Button from '../components/common/Button';
 import {
   Truck, User, Store, ShieldCheck,
@@ -165,7 +166,9 @@ export default function Login() {
     const res = await validateCitizenCredentials({ rationCardNo: rationCard, phone });
     if (res.success) {
       setMaskedPhone(res.maskedPhone);
-      setOtpHint(res.debugOtp ? `Use OTP ${res.debugOtp}` : 'Check your registered phone for the OTP.');
+      setOtpHint(DEMO_MODE && res.debugOtp
+        ? `Demo mode only: use OTP ${res.debugOtp}`
+        : 'Check your registered phone for the OTP.');
       toast.success(`OTP sent to ${res.maskedPhone}`);
     } else {
       toast.error('Ration card and phone combination did not match our registry.');
@@ -198,6 +201,9 @@ export default function Login() {
   const handleStaffLogin = (e) => {
     e.preventDefault();
     const credentials = USER_CREDENTIALS[activeTab];
+    if (!credentials?.username || !credentials?.password) {
+      return toast.error('Staff login is not configured. Add the required VITE credentials in your environment file.');
+    }
     if (!credentials || username.trim() !== credentials.username || password !== credentials.password) {
       return toast.error('Invalid username or password. Please enter your registered credentials.');
     }

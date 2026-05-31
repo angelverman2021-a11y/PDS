@@ -147,12 +147,12 @@ export const MOCK_USERS = {
 
 export const USER_CREDENTIALS = {
   dealer: {
-    username: 'suresh.patil',
-    password: 'FPS4521!'
+    username: import.meta.env.VITE_DEALER_USERNAME || '',
+    password: import.meta.env.VITE_DEALER_PASSWORD || '',
   },
   admin: {
-    username: 'sharma.district',
-    password: 'Pune2025@'
+    username: import.meta.env.VITE_ADMIN_USERNAME || '',
+    password: import.meta.env.VITE_ADMIN_PASSWORD || '',
   },
 };
 

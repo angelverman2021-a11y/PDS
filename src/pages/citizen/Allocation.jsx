@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { Package, Calendar, Store, Info, Clock, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
 import {
@@ -40,37 +41,34 @@ export default function Allocation() {
   const familySize = user?.familySize || 4;
   const citizenId  = user?.id         || 'citizen_001';
 
-  const entitlements = computeAllocation(category, familySize);
-  const collectedMap = MOCK_COLLECTED[citizenId] || {};
+  const entitlements = useMemo(() => computeAllocation(category, familySize), [category, familySize]);
+  const collectedMap = useMemo(() => MOCK_COLLECTED[citizenId] || {}, [citizenId]);
 
-  const [rows, setRows] = useState([]);
+  const [remainingOverrides, setRemainingOverrides] = useState({});
 
-  useEffect(() => {
-    const initialRows = entitlements.map(product => {
+  const rows = useMemo(() => (
+    entitlements.map(product => {
       const collected = collectedMap[product.id]?.collected ?? 0;
-      const remaining = Math.max(0, product.entitledQty - collected);
-      const status = getItemStatus(product.entitledQty, collected);
-      const pct = Math.min(100, Math.round((collected / product.entitledQty) * 100));
+      const defaultRemaining = Math.max(0, product.entitledQty - collected);
+      const remaining = remainingOverrides[product.id] ?? defaultRemaining;
+      const adjustedCollected = Math.max(0, product.entitledQty - remaining);
+      const status = getItemStatus(product.entitledQty, adjustedCollected);
+      const pct = Math.min(100, Math.round((adjustedCollected / product.entitledQty) * 100));
       return {
         ...product,
-        collected,
+        collected: adjustedCollected,
         remaining,
         status,
         pct,
       };
-    });
-    setRows(initialRows);
-  }, [category, familySize, citizenId]);
+    })
+  ), [entitlements, collectedMap, remainingOverrides]);
 
   const handleRemainingChange = (id, nextValue) => {
-    setRows(current => current.map(row => {
-      if (row.id !== id) return row;
-      const remaining = Math.max(0, Math.min(row.entitledQty, Number(nextValue) || 0));
-      const collected = Math.max(0, row.entitledQty - remaining);
-      const status = getItemStatus(row.entitledQty, collected);
-      const pct = Math.min(100, Math.round((collected / row.entitledQty) * 100));
-      return { ...row, remaining, collected, status, pct };
-    }));
+    const row = rows.find(item => item.id === id);
+    if (!row) return;
+    const remaining = Math.max(0, Math.min(row.entitledQty, Number(nextValue) || 0));
+    setRemainingOverrides(current => ({ ...current, [id]: remaining }));
   };
 
   const overallStatus = computeOverallStatus(rows);

@@ -1,5 +1,5 @@
 import { calculateDistanceKm, generateMapsLink } from './geoService';
-import { REAL_SHOP_PROVIDER_CONFIGURED, SHOP_DATA_PROVIDER } from '../config/platformConfig';
+import { SHOP_DATA_PROVIDER } from '../config/platformConfig';
 import { MOCK_SHOPS, STOCK_STATUS } from '../constants';
 
 const PINCODE_COORDINATES = {
@@ -67,7 +67,7 @@ async function searchGooglePlaces({ pincode, limit }) {
     return { ok: false, error: 'GOOGLE_PLACES_NO_RESULTS', shops: [] };
   }
 
-  const shops = data.results.map(place => ({
+  const shops = data.results.slice(0, limit).map(place => ({
     id: place.place_id,
     name: place.name,
     address: place.formatted_address,
@@ -122,7 +122,7 @@ async function searchNominatim({ pincode, limit }) {
   return { ok: true, provider: 'osm', shops };
 }
 
-async function searchExternalShopProvider({ pincode, userLocation, limit = 10 }) {
+async function searchExternalShopProvider({ pincode, limit = 10 }) {
   if (!validatePincode(pincode)) {
     return { ok: false, error: 'PINCODE_INVALID', shops: [] };
   }
@@ -154,7 +154,7 @@ export async function searchShopsByPincode({ pincode, userLocation, limit = 10 }
     return { ok: false, error: 'PINCODE_INVALID', shops: [] };
   }
 
-  const providerResult = await searchExternalShopProvider({ pincode, userLocation, limit });
+  const providerResult = await searchExternalShopProvider({ pincode, limit });
   if (!providerResult.ok) return providerResult;
 
   const origin = userLocation ?? PINCODE_COORDINATES[pincode];

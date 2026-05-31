@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BENEFICIARY_REGISTRY, MOCK_USERS } from '../constants';
+import { BENEFICIARY_REGISTRY } from '../constants';
 import { AuthContext } from './AuthContextCore';
 import { VERIFY_STATE } from './authConstants';
 import { normalizePhoneNumber, sendOtp, verifyOtp } from '../services/otpService';
@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
   const validateOTP = (otp) => {
     return new Promise((resolve) => {
       setLoading(true);
-      setTimeout(() => {
+      setTimeout(async () => {
         setLoading(false);
 
         if (!pendingBeneficiary) {

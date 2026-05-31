@@ -197,6 +197,13 @@ export default function Login() {
     }, 600);
   };
 
+  const handleGuestLogin = () => {
+    resetVerification();
+    login(MOCK_USERS.citizen);
+    toast.success('Guest demo login started.');
+    setTimeout(() => navigate('/dashboard'), 600);
+  };
+
   // ── Dealer / Admin login ──────────────────────────────────
   const handleStaffLogin = (e) => {
     e.preventDefault();
@@ -371,46 +378,63 @@ export default function Login() {
 
               // Step 1: Ration card entry
               (
-                <form onSubmit={handleSendOTP} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ration Card Number
-                    </label>
-                    <input
-                      type="text"
-                      value={rationCard}
-                      onChange={e => setRationCard(e.target.value.toUpperCase())}
-                      placeholder="e.g. MH-2024-00123"
-                      className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 uppercase tracking-wide ${
-                        verifyState === VERIFY_STATE.INVALID_CARD
-                          ? 'border-red-400 focus:ring-red-400 bg-red-50'
-                          : 'border-gray-300 focus:ring-green-500'
-                      }`}
-                    />
-                    {verifyState === VERIFY_STATE.INVALID_CARD && (
-                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                        <XCircle size={12} /> Ration card and phone number must match the registered record.
-                      </p>
-                    )}
+                <div className="space-y-4">
+                  <form onSubmit={handleSendOTP} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ration Card Number
+                      </label>
+                      <input
+                        type="text"
+                        value={rationCard}
+                        onChange={e => setRationCard(e.target.value.toUpperCase())}
+                        placeholder="e.g. MH-2024-00123"
+                        className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 uppercase tracking-wide ${
+                          verifyState === VERIFY_STATE.INVALID_CARD
+                            ? 'border-red-400 focus:ring-red-400 bg-red-50'
+                            : 'border-gray-300 focus:ring-green-500'
+                        }`}
+                      />
+                      {verifyState === VERIFY_STATE.INVALID_CARD && (
+                        <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                          <XCircle size={12} /> Ration card and phone number must match the registered record.
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Registered Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        placeholder="e.g. 9876543210"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+
+                    <Button type="submit" fullWidth loading={loading} size="lg">
+                      Send OTP
+                    </Button>
+                  </form>
+
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-gray-200" />
+                    <span className="text-xs font-medium text-gray-400">or</span>
+                    <div className="h-px flex-1 bg-gray-200" />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Registered Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={e => setPhone(e.target.value)}
-                      placeholder="e.g. 9876543210"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
+                  <div className="rounded-xl border border-dashed border-green-200 bg-green-50 p-3">
+                    <p className="text-xs text-green-800 mb-3">
+                      No ration card right now? Continue with a sample citizen profile for demo access.
+                    </p>
+                    <Button type="button" fullWidth variant="outline" onClick={handleGuestLogin}>
+                      Login as Guest
+                    </Button>
                   </div>
-
-                  <Button type="submit" fullWidth loading={loading} size="lg">
-                    Send OTP
-                  </Button>
-                </form>
+                </div>
               )
             )}
 

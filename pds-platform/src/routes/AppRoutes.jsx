@@ -10,6 +10,7 @@ import ShopDetails from '../pages/public/ShopDetails';
 import QRVerification from '../pages/public/QRVerification';
 import ComplaintPortal from '../pages/public/ComplaintPortal';
 import DataSources from '../pages/public/DataSources';
+import NotFound from '../pages/NotFound';
 
 // Citizen Pages
 import CitizenDashboard from '../pages/citizen/Dashboard';
@@ -86,8 +87,8 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* 404 */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

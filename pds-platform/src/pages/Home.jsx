@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck, QrCode, AlertTriangle, ArrowRight,
@@ -10,10 +11,10 @@ import {
 } from 'lucide-react';
 
 const stats = [
-  { label: 'Ration Shops',         value: '1,45,000+', icon: Store,       color: 'green' },
-  { label: 'Citizens Served',      value: '80 Crore+', icon: Users,       color: 'blue' },
-  { label: 'Complaints Resolved',  value: '98,400+',   icon: CheckCircle, color: 'purple' },
-  { label: 'Verifications Done',   value: '2.1 Crore', icon: QrCode,      color: 'amber' },
+  { label: 'Ration Shops',        target: 145000, suffix: '+',        icon: Store,       color: 'green'  },
+  { label: 'Citizens Served',     target: 80,     suffix: ' Crore+',  icon: Users,       color: 'blue'   },
+  { label: 'Complaints Resolved', target: 98400,  suffix: '+',        icon: CheckCircle, color: 'purple' },
+  { label: 'Verifications Done',  target: 2.1,    suffix: ' Crore',   icon: QrCode,      color: 'amber'  },
 ];
 
 const statColorClasses = {
@@ -173,6 +174,53 @@ const readinessChecks = [
   { icon: Timer, title: 'SLA monitoring', desc: 'Complaint acknowledgement, review, escalation, and closure timelines are stated and trackable.' },
 ];
 
+function useCountUp(target, duration = 1800) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const observed = useRef(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting || observed.current) return;
+      observed.current = true;
+      const start = performance.now();
+      const isFloat = !Number.isInteger(target);
+      const step = (now) => {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const val = eased * target;
+        setCount(isFloat ? Math.round(val * 10) / 10 : Math.floor(val));
+        if (progress < 1) requestAnimationFrame(step);
+        else setCount(target);
+      };
+      requestAnimationFrame(step);
+    }, { threshold: 0.3 });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [target, duration]);
+
+  return { count, ref };
+}
+
+function StatCard({ label, target, suffix, icon: Icon, color }) {
+  const { count, ref } = useCountUp(target);
+  const cls = statColorClasses[color];
+  const display = Number.isInteger(target)
+    ? count.toLocaleString('en-IN')
+    : count.toFixed(1);
+  return (
+    <div ref={ref} className="space-y-2">
+      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mx-auto ${cls}`}>
+        <Icon size={22} />
+      </div>
+      <p className="text-3xl font-extrabold text-white">{display}{suffix}</p>
+      <p className="text-sm text-gray-400">{label}</p>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <div className="bg-white">
@@ -214,14 +262,8 @@ export default function Home() {
       {/* ── Stats ────────────────────────────────────────── */}
       <section className="bg-gray-900 text-white py-12">
         <div className="max-w-6xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {stats.map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="space-y-2">
-              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mx-auto ${statColorClasses[color]}`}>
-                <Icon size={22} />
-              </div>
-              <p className="text-3xl font-extrabold text-white">{value}</p>
-              <p className="text-sm text-gray-400">{label}</p>
-            </div>
+          {stats.map(({ label, target, suffix, icon: Icon, color }) => (
+            <StatCard key={label} label={label} target={target} suffix={suffix} icon={Icon} color={color} />
           ))}
         </div>
       </section>

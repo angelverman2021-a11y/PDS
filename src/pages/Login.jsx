@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { VERIFY_STATE } from '../context/authConstants';
-import { ROLES, USER_CREDENTIALS, MOCK_USERS } from '../constants';
+import { ROLES, MOCK_USERS } from '../constants';
 import { DEMO_MODE } from '../config/platformConfig';
 import Button from '../components/common/Button';
 import {
@@ -141,7 +141,7 @@ export default function Login() {
   const [confirming, setConfirming] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
 
-  const { login, loading, verifyState, pendingBeneficiary,
+  const { login, loginStaff, loading, verifyState, pendingBeneficiary,
           validateCitizenCredentials, validateOTP, resetVerification,
           otpAttempts, otpSentAt } = useAuth();
   const navigate = useNavigate();
@@ -220,18 +220,17 @@ export default function Login() {
   };
 
   // ── Dealer / Admin login ──────────────────────────────────
-  const handleStaffLogin = (e) => {
+  const handleStaffLogin = async (e) => {
     e.preventDefault();
-    const credentials = USER_CREDENTIALS[activeTab];
-    if (!credentials?.username || !credentials?.password) {
-      return toast.error('Staff login is not configured. Add the required VITE credentials in your environment file.');
+    const res = await loginStaff({ role: activeTab, username, password });
+    if (!res.success) {
+      if (res.reason === 'STAFF_LOGIN_NOT_CONFIGURED') {
+        return toast.error('Staff login is not configured. Add credentials in the backend .env file.');
+      }
+      return toast.error('Invalid username or password.');
     }
-    if (!credentials || username.trim() !== credentials.username || password !== credentials.password) {
-      return toast.error('Invalid username or password. Please enter your registered credentials.');
-    }
-    login(MOCK_USERS[activeTab]);
-    toast.success(`Welcome back, ${MOCK_USERS[activeTab].name}`);
-    setTimeout(() => navigate(redirectMap[activeTab]), 900);
+    toast.success(`Welcome back, ${res.user.name}`);
+    setTimeout(() => navigate(redirectMap[activeTab]), 600);
   };
 
   const handleTabChange = (role) => {

@@ -3,6 +3,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
 import healthRouter from './routes/health.js';
+import authRouter from './routes/auth.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 const app = express();
@@ -28,6 +29,7 @@ app.use('/api', rateLimit({
 
 // ── Routes ────────────────────────────────────────────────
 app.use('/api/v1', healthRouter);
+app.use('/api/v1/auth', authRouter);
 
 // ── 404 + Error handlers ──────────────────────────────────
 app.use(notFound);

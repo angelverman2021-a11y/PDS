@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   QrCode, Download, ShieldCheck, Calendar,
   Store, CheckCircle, Clock, AlertTriangle, Info, Upload,
 } from 'lucide-react';
-import { MOCK_RECEIPTS, RECEIPT_STATUS } from '../../constants';
+import { RECEIPT_STATUS } from '../../constants';
+import { fetchCitizenReceipts } from '../../services/receiptService';
 import { useAuth } from '../../context/useAuth';
 import toast from 'react-hot-toast';
 
@@ -139,16 +140,20 @@ export default function Receipts() {
   const { user }   = useAuth();
   const navigate   = useNavigate();
   const fileInputRef = useRef(null);
+  const [myReceipts, setMyReceipts] = useState([]);
+  const [receiptsLoading, setReceiptsLoading] = useState(true);
   const [receiptImage, setReceiptImage] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [auditStep, setAuditStep] = useState(0);
 
-  // Filter receipts for logged-in citizen
-  const myReceipts = MOCK_RECEIPTS.filter(
-    r => r.citizenId === (user?.id || 'citizen_001')
-  );
+  useEffect(() => {
+    const citizenId = user?.id || 'citizen_001';
+    fetchCitizenReceipts(citizenId)
+      .then(setMyReceipts)
+      .finally(() => setReceiptsLoading(false));
+  }, [user]);
 
   const handleDownload = (receipt) => {
     toast.success(`Receipt for ${receipt.month} downloaded as PDF`);
@@ -377,7 +382,11 @@ export default function Receipts() {
           )}
         </div>
 
-        {myReceipts.length === 0 ? (
+        {receiptsLoading ? (
+          <div className="text-center py-16">
+            <span className="w-8 h-8 border-2 border-green-700/30 border-t-green-700 rounded-full animate-spin inline-block" />
+          </div>
+        ) : myReceipts.length === 0 ? (
           <div className="text-center py-16">
             <QrCode size={48} className="mx-auto text-gray-300 mb-3" />
             <p className="font-semibold text-gray-600">No receipts yet</p>

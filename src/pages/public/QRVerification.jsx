@@ -5,38 +5,11 @@ import {
   Search, Package, Store, Calendar,
   ShieldCheck, AlertTriangle, Info,
 } from 'lucide-react';
-import { MOCK_RECEIPTS, MOCK_SHOPS } from '../../constants';
+import { MOCK_RECEIPTS } from '../../constants';
+import { verifyQRCode } from '../../services/receiptService';
 import toast from 'react-hot-toast';
 
-// ── QR Lookup Engine ──────────────────────────────────────
-// Validates against the actual receipt database.
-// Checks: QR exists, shop matches, receipt is not tampered.
-function lookupQR(qrCode) {
-  const trimmed = qrCode.trim();
-  if (!trimmed) return { valid: false, reason: 'No QR code provided.' };
-
-  // Find receipt in database
-  const receipt = MOCK_RECEIPTS.find(r => r.qrCode === trimmed);
-  if (!receipt) {
-    return { valid: false, reason: 'QR code not found in receipt database. This receipt may be fake or tampered.' };
-  }
-
-  // Verify shop exists
-  const shop = MOCK_SHOPS.find(s => s.id === receipt.shopId);
-  if (!shop) {
-    return { valid: false, reason: 'Shop linked to this receipt is not registered.' };
-  }
-
-  return {
-    valid: true,
-    receipt,
-    shop,
-    beneficiaryName: receipt.rationCardNo.slice(0, 5) + '***',
-  };
-}
-
 const DEMO_QR_IDS = MOCK_RECEIPTS.map(r => r.qrCode);
-
 export default function QRVerification() {
   const location  = useLocation();
   const prefill   = new URLSearchParams(location.search).get('qr') || (location.state?.qr ?? '');
@@ -45,17 +18,20 @@ export default function QRVerification() {
   const [result, setResult]   = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleVerify = (e) => {
+  const handleVerify = async (e) => {
     e?.preventDefault();
     if (!qrCode.trim()) return toast.error('Enter a QR code or Receipt ID');
     setLoading(true);
-    setTimeout(() => {
-      const res = lookupQR(sanitize(qrCode));
+    try {
+      const res = await verifyQRCode(sanitize(qrCode));
       setResult(res);
-      setLoading(false);
       if (res.valid) toast.success('Receipt verified successfully!');
       else toast.error('Invalid or unrecognised QR code');
-    }, 800);
+    } catch {
+      toast.error('Could not reach verification server');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const sanitize = (str) => str.replace(/[<>"'&]/g, '');

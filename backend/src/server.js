@@ -5,6 +5,7 @@ import { config } from './config/index.js';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
 import complaintsRouter from './routes/complaints.js';
+import receiptsRouter from './routes/receipts.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 const app = express();
@@ -32,6 +33,7 @@ app.use('/api', rateLimit({
 app.use('/api/v1', healthRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/complaints', complaintsRouter);
+app.use('/api/v1/receipts', receiptsRouter);
 
 // ── 404 + Error handlers ──────────────────────────────────
 app.use(notFound);

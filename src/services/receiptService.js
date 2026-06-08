@@ -1,100 +1,69 @@
-import { BENEFICIARY_REGISTRY, computeAllocation, RECEIPT_STATUS } from '../constants';
-import { verifyOtp } from './otpService';
+import { API_BASE_URL } from '../config/platformConfig';
+
+const BASE = `${API_BASE_URL}/api/v1/receipts`;
 
 // ── Step 1: Verify Beneficiary ────────────────────────────
-export function verifyBeneficiary(rationCardNo, otp) {
-  return new Promise((resolve) => {
-    setTimeout(async () => {
-      const beneficiary = BENEFICIARY_REGISTRY[rationCardNo?.trim().toUpperCase()];
-      if (!beneficiary) {
-        resolve({ success: false, reason: 'Ration card not found in registry.' });
-        return;
-      }
-      const otpResult = await verifyOtp({ phone: beneficiary.phone, otp });
-      if (!otpResult.ok) {
-        resolve({ success: false, reason: 'Invalid OTP. Please try again.' });
-        return;
-      }
-      resolve({ success: true, beneficiary });
-    }, 700);
+export async function verifyBeneficiary(rationCardNo, otp) {
+  const res = await fetch(`${BASE}/verify-beneficiary`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rationCardNo, otp }),
   });
+  const data = await res.json();
+  if (!data.ok) return { success: false, reason: data.reason || data.error };
+  return { success: true, beneficiary: data.beneficiary };
 }
 
 // ── Step 2: Check Allocation ──────────────────────────────
-export function checkAllocation(beneficiary, month) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const entitlements = computeAllocation(beneficiary.category, beneficiary.familySize);
-      if (!entitlements.length) {
-        resolve({ success: false, reason: 'No allocation found for this beneficiary.' });
-        return;
-      }
-      resolve({
-        success: true,
-        entitlements,
-        month,
-        collectionWindow: `1–31 ${new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })}`,
-      });
-    }, 600);
+export async function checkAllocation(beneficiary, month) {
+  const res = await fetch(`${BASE}/check-allocation`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rationCardNo: beneficiary.rationCardNo, month }),
   });
+  const data = await res.json();
+  if (!data.ok) return { success: false, reason: data.reason || data.error };
+  return {
+    success: true,
+    entitlements: data.entitlements,
+    month: data.month,
+    collectionWindow: data.collectionWindow,
+  };
 }
 
 // ── Step 3: Confirm Distribution ─────────────────────────
-export function confirmDistribution(beneficiary, entitlements, distributedItems) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Validate each distributed item doesn't exceed entitlement
-      const violations = distributedItems.filter(item => {
-        const entitled = entitlements.find(e => e.id === item.id);
-        return entitled && item.qty > entitled.entitledQty;
-      });
-      if (violations.length) {
-        resolve({
-          success: false,
-          reason: `Distributed quantity exceeds entitlement for: ${violations.map(v => v.name).join(', ')}`,
-        });
-        return;
-      }
-      resolve({ success: true, confirmedAt: new Date().toISOString() });
-    }, 600);
+export async function confirmDistribution(beneficiary, entitlements, distributedItems) {
+  const res = await fetch(`${BASE}/confirm-distribution`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rationCardNo: beneficiary.rationCardNo, entitlements, distributedItems }),
   });
+  const data = await res.json();
+  if (!data.ok) return { success: false, reason: data.reason || data.error };
+  return { success: true, confirmedAt: data.confirmedAt };
 }
 
 // ── Step 4: Generate Receipt ──────────────────────────────
-export function generateReceipt(beneficiary, shopId, shopName, distributedItems, confirmedAt) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const now       = new Date();
-      const monthKey  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const monthLabel = now.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
-      const rcptId    = `rcpt_${Date.now()}`;
-      const qrToken   = `QR-PDS-${monthKey}-${Math.floor(Math.random() * 9000) + 1000}`;
-      const total     = distributedItems.reduce((s, i) => s + i.total, 0);
-
-      const receipt = {
-        id: rcptId,
-        qrCode: qrToken,
-        month: monthLabel,
-        monthKey,
-        shopId,
-        shopName,
-        dealerId: 'dealer_001',
-        citizenId: beneficiary.id,
-        rationCardNo: beneficiary.rationCardNo,
-        category: beneficiary.category,
-        familySize: beneficiary.familySize,
-        distributedItems,
-        totalAmount: +total.toFixed(2),
-        status: RECEIPT_STATUS.GENERATED,
-        generatedAt: now.toISOString(),
-        verifiedAt: null,
-        verificationMethod: 'OTP',
-        dealerConfirmedAt: confirmedAt,
-        allocationChecked: true,
-        isPartial: false,
-      };
-
-      resolve({ success: true, receipt });
-    }, 800);
+export async function generateReceipt(beneficiary, shopId, shopName, distributedItems, confirmedAt) {
+  const res = await fetch(`${BASE}/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rationCardNo: beneficiary.rationCardNo, shopId, shopName, distributedItems, confirmedAt }),
   });
+  const data = await res.json();
+  if (!data.ok) return { success: false, reason: data.error };
+  return { success: true, receipt: data.receipt };
+}
+
+// ── Fetch receipts for a citizen ─────────────────────────
+export async function fetchCitizenReceipts(citizenId) {
+  const res = await fetch(`${BASE}/citizen/${citizenId}`);
+  const data = await res.json();
+  return data.ok ? data.receipts : [];
+}
+
+// ── Verify QR code ────────────────────────────────────────
+export async function verifyQRCode(qrCode) {
+  const res = await fetch(`${BASE}/verify-qr/${encodeURIComponent(qrCode)}`);
+  return res.json();
 }

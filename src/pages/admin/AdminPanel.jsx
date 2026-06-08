@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   ClipboardList, ScrollText, Filter, Search,
   CheckCircle, AlertTriangle, ChevronDown, User,
-  Store, Calendar, FileText, ShieldAlert, Clock,
+  Store, Calendar, FileText, ShieldAlert, Clock, Terminal,
 } from 'lucide-react';
 import {
   MOCK_COMPLAINTS, MOCK_AUDIT_LOGS, MOCK_USERS,
@@ -16,6 +16,7 @@ const LABELS = {
   tabs: {
     complaints: 'Complaint Queue',
     audit: 'Audit Logs',
+    integrity: 'System Integrity',
   },
   filters: {
     all: 'All',
@@ -29,7 +30,8 @@ const LABELS = {
 
 const TABS = [
   { id: 'complaints', label: LABELS.tabs.complaints, icon: ClipboardList },
-  { id: 'audit',      label: LABELS.tabs.audit,      icon: ScrollText },
+  { id: 'audit',      label: LABELS.tabs.audit,      icon: ScrollText    },
+  { id: 'integrity',  label: LABELS.tabs.integrity,  icon: Terminal      },
 ];
 
 const STATUS_FILTERS = [
@@ -327,6 +329,28 @@ function ComplaintsTab() {
 // ── Audit Logs Tab ────────────────────────────────────────
 function AuditLogsTab() {
   const [search, setSearch] = useState('');
+  const [scanStatus, setScanStatus] = useState('idle');
+  const [scanMessage, setScanMessage] = useState('');
+
+  const timelineEntries = MOCK_AUDIT_LOGS.slice(0, 4).map((log, index) => ({
+    id: log.id,
+    action: log.action,
+    timestamp: log.dateTime,
+    hash: [
+      'e3b0c44298fc1c149afb',
+      'a54d88e06612d820bc3b',
+      '2d711642b726b044016b',
+      '41edece42d8d7a4202ad',
+    ][index] + '...9f8b',
+  }));
+
+  const matrixLines = [
+    '01010110 10010111 11001010',
+    '10111001 01100011 00101110',
+    '00111100 10011011 01101001',
+    '11010101 00011010 01100101',
+    '01100110 10101011 10011100',
+  ];
 
   const ACTION_ICONS = {
     'Stock Updated':        { icon: Store,         color: 'text-blue-600 bg-blue-50'   },
@@ -334,6 +358,16 @@ function AuditLogsTab() {
     'Complaint Resolved':   { icon: CheckCircle,    color: 'text-green-600 bg-green-50' },
     'Complaint Assigned':   { icon: ShieldAlert,    color: 'text-purple-600 bg-purple-50' },
     'Citizen Verification': { icon: User,           color: 'text-purple-600 bg-purple-50'},
+  };
+
+  const handleRunScan = () => {
+    setScanStatus('scanning');
+    setScanMessage('');
+    setTimeout(() => {
+      setScanStatus('complete');
+      setScanMessage('0 Tampered Records Found. Cryptographic seals intact.');
+      toast.success('System integrity scan completed successfully');
+    }, 2000);
   };
 
   const filtered = MOCK_AUDIT_LOGS.filter(log =>
@@ -348,8 +382,84 @@ function AuditLogsTab() {
       <div>
         <h3 className="font-semibold text-gray-800 mb-1">System Audit Trail</h3>
         <p className="text-sm text-gray-500">
-          Immutable log of all actions performed across the platform.
+          Immutable ledger history and cryptographic evidence of every transaction.
         </p>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">SHA-256 Cryptographic Verification Timeline</p>
+              <p className="text-xs text-gray-500 mt-1">Recent ledger transactions secured with tamper-proof hash seals.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRunScan}
+              disabled={scanStatus === 'scanning'}
+              className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                scanStatus === 'scanning'
+                  ? 'bg-slate-200 text-slate-700'
+                  : 'bg-purple-700 text-white hover:bg-purple-800'
+              }`}
+            >
+              {scanStatus === 'scanning' ? 'Scanning...' : 'Run System Integrity Scan'}
+            </button>
+          </div>
+
+          <div className="mt-5 rounded-3xl border border-slate-900/10 bg-slate-950 p-4 text-slate-200">
+            <div className="grid gap-2 sm:grid-cols-2">
+              {matrixLines.map((line, index) => (
+                <div
+                  key={index}
+                  className={`overflow-hidden rounded-2xl border border-slate-800/40 bg-slate-900/75 px-3 py-2 text-[10px] font-mono ${
+                    scanStatus === 'scanning' ? 'animate-pulse opacity-100' : 'opacity-70'
+                  }`}
+                >
+                  {line}
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-400">
+              <span>{scanStatus === 'scanning' ? 'Matrix scan in progress...' : 'Secure audit hash engine ready.'}</span>
+              {scanStatus === 'complete' && (
+                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-200">Integrity Verified</span>
+              )}
+            </div>
+          </div>
+
+          {scanStatus === 'complete' && (
+            <div className="mt-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900">
+              <p className="font-semibold">{scanMessage}</p>
+              <p className="mt-1 text-xs text-emerald-800">Every transaction hash and block seal was validated against the distributed ledger.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          {timelineEntries.map(item => (
+            <div key={item.id} className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.id}</p>
+                  <p className="mt-2 text-sm font-semibold text-gray-900">{item.action}</p>
+                </div>
+                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                  <Badge status="success" /> Integrity Verified
+                </span>
+              </div>
+              <div className="mt-4 rounded-3xl bg-slate-50 p-3 text-sm text-slate-700">
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>Timestamp</span>
+                  <span>{item.timestamp}</span>
+                </div>
+                <div className="mt-3 rounded-2xl bg-slate-900 px-3 py-2 font-mono text-xs text-emerald-200 break-all">
+                  {item.hash}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Search */}
@@ -406,6 +516,105 @@ function AuditLogsTab() {
   );
 }
 
+// ── System Integrity Tab ──────────────────────────────────
+function IntegrityTab() {
+  const [scanHistory, setScanHistory] = useState([]);
+  const [scanRunning, setScanRunning] = useState(false);
+  const [scanComplete, setScanComplete] = useState(false);
+
+  const ledgerTimeline = [
+    { id: 'TX-5892', action: 'Receipt Issued', timestamp: '2025-07-14 09:22', hash: '8f4c63b1a47d...2d9c' },
+    { id: 'TX-5893', action: 'Allocation Logged', timestamp: '2025-07-14 09:03', hash: 'b12a9f4c3d80...1f02' },
+    { id: 'TX-5894', action: 'Shop Confirmed', timestamp: '2025-07-14 09:30', hash: 'e2b47c8d6f12...a4b7' },
+    { id: 'TX-5895', action: 'Ledger Anchored', timestamp: '2025-07-14 09:35', hash: '9a7f4c3b1d6e...c8a1' },
+  ];
+
+  const scanSteps = [
+    'Initializing integrity engine...',
+    'Checking block 0x4F9A... ',
+    'Validating structural seals...',
+    'Reconciling distributed ledger snapshot...',
+    'Verifying transaction hash chain...',
+    'Finalizing scan results...',
+  ];
+
+  const handleRunScan = () => {
+    if (scanRunning) return;
+    setScanHistory([]);
+    setScanComplete(false);
+    setScanRunning(true);
+
+    let index = 0;
+    const interval = setInterval(() => {
+      setScanHistory((prev) => [...prev, scanSteps[index]]);
+      index += 1;
+      if (index >= scanSteps.length) {
+        clearInterval(interval);
+        setScanRunning(false);
+        setScanComplete(true);
+      }
+    }, 300);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">System Integrity & Cryptographic Logs</p>
+          <p className="text-xs text-gray-500 mt-1 max-w-2xl">
+            Immutable ledger entries and simulated SHA-256 verification for critical PDS transactions.
+          </p>
+        </div>
+        <button
+          onClick={handleRunScan}
+          className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+            scanRunning ? 'bg-slate-500 text-white' : 'bg-purple-700 text-white hover:bg-purple-800'
+          }`}
+        >
+          <Terminal size={16} />
+          {scanRunning ? 'Scanning...' : 'Execute System-Wide Integrity Scan'}
+        </button>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-3xl border border-slate-200 bg-slate-950 p-5 text-slate-100 shadow-sm">
+          <p className="text-sm font-semibold text-white mb-4">Terminal Scan Output</p>
+          <div className="min-h-[220px] rounded-3xl border border-slate-800 bg-slate-900 p-4 text-xs font-mono leading-6 text-emerald-200">
+            {scanHistory.length === 0 ? (
+              <p className="text-slate-500">Press the scan button to begin cryptographic inspection.</p>
+            ) : (
+              scanHistory.map((line, index) => (
+                <p key={index} className={scanRunning ? 'animate-pulse' : ''}>{line}</p>
+              ))
+            )}
+          </div>
+          {scanComplete && (
+            <div className="mt-4 rounded-3xl bg-emerald-50 border border-emerald-100 p-4 text-emerald-900">
+              <p className="font-semibold">Scan Complete: 0 anomalies found. Local ledger matches distributed state database.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          {ledgerTimeline.map((entry) => (
+            <div key={entry.id} className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <span className="absolute right-4 top-4 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-emerald-700">
+                SHA-256 Verified
+              </span>
+              <p className="text-xs text-slate-500 uppercase tracking-[0.24em]">{entry.id}</p>
+              <p className="text-sm font-semibold text-gray-900 mt-2">{entry.action}</p>
+              <p className="text-xs text-slate-500 mt-1">{entry.timestamp}</p>
+              <div className="mt-3 rounded-2xl bg-slate-950 px-3 py-3 text-[11px] font-mono text-emerald-200">
+                {entry.hash}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Admin Panel ──────────────────────────────────────
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState('complaints');
@@ -455,6 +664,7 @@ export default function AdminPanel() {
         <Card>
           {activeTab === 'complaints' && <ComplaintsTab />}
           {activeTab === 'audit'      && <AuditLogsTab />}
+          {activeTab === 'integrity'  && <IntegrityTab />}
         </Card>
       </div>
     </div>

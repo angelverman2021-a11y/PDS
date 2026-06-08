@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
 import { ROLES } from '../../constants';
+import { DEMO_MODE, getModeLabel } from '../../config/platformConfig';
 import {
   Home, Store, QrCode, FileText, AlertTriangle,
   LayoutDashboard, LogOut, LogIn, ShieldCheck, Truck,
@@ -60,6 +61,12 @@ export default function Navbar() {
 
   return (
     <>
+      {DEMO_MODE && (
+        <div className="bg-amber-100 border-b border-amber-200 text-amber-900 text-center text-xs font-semibold px-3 py-2">
+          {getModeLabel()} · Test users and sample allocations only · Real shops require an external provider
+        </div>
+      )}
+
       {/* Desktop Navbar */}
       <nav className={`${roleColor} text-white shadow-lg hidden md:block`}>
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">

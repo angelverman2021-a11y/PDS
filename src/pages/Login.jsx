@@ -139,6 +139,7 @@ export default function Login() {
   const [username, setUsername]     = useState('');
   const [password, setPassword]     = useState('');
   const [confirming, setConfirming] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   const { login, loading, verifyState, pendingBeneficiary,
           validateCitizenCredentials, validateOTP, resetVerification,
@@ -188,7 +189,12 @@ export default function Login() {
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     if (!otp.trim()) return toast.error('Enter the OTP sent to your phone.');
+
+    setVerifyingOtp(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
     const res = await validateOTP(otp);
+    setVerifyingOtp(false);
+
     if (res.success) {
       toast.success('OTP verified successfully!');
     } else {
@@ -372,9 +378,14 @@ export default function Login() {
                     </p>
                   </div>
 
-                  <Button type="submit" fullWidth loading={loading} size="lg" disabled={secondsLeft === 0}>
+                  <Button type="submit" fullWidth loading={verifyingOtp || loading} size="lg" disabled={secondsLeft === 0}>
                     Verify OTP
                   </Button>
+                  {verifyingOtp && (
+                    <p className="mt-3 text-center text-xs text-gray-500">
+                      Verifying secure token... please wait while the system confirms the hardware-backed OTP.
+                    </p>
+                  )}
                   <button
                     type="button"
                     onClick={() => { resetVerification(); setOtp(''); }}

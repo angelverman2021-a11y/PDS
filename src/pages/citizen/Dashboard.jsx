@@ -133,6 +133,27 @@ export default function CitizenDashboard() {
           </div>
         </Card>
 
+        {/* AI Audit Callout */}
+        <Card>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <FileText size={18} className="text-blue-600" /> AI Receipt OCR Audit
+              </p>
+              <p className="text-xs text-gray-500 mt-2 max-w-2xl">
+                Quickly validate your physical receipt against digital state allocations using the simulated AI audit in Receipts.
+              </p>
+            </div>
+            <Link
+              to="/receipts"
+              className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/10 hover:bg-blue-800 transition"
+            >
+              Open AI Audit
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+        </Card>
+
         {/* Allocation Snapshot */}
         <Card>
           <div className="flex items-center justify-between mb-4">

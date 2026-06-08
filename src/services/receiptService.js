@@ -1,15 +1,17 @@
 import { BENEFICIARY_REGISTRY, computeAllocation, RECEIPT_STATUS } from '../constants';
+import { verifyOtp } from './otpService';
 
 // ── Step 1: Verify Beneficiary ────────────────────────────
 export function verifyBeneficiary(rationCardNo, otp) {
   return new Promise((resolve) => {
-    setTimeout(() => {
+    setTimeout(async () => {
       const beneficiary = BENEFICIARY_REGISTRY[rationCardNo?.trim().toUpperCase()];
       if (!beneficiary) {
         resolve({ success: false, reason: 'Ration card not found in registry.' });
         return;
       }
-      if (otp?.trim() !== beneficiary.otp) {
+      const otpResult = await verifyOtp({ phone: beneficiary.phone, otp });
+      if (!otpResult.ok) {
         resolve({ success: false, reason: 'Invalid OTP. Please try again.' });
         return;
       }

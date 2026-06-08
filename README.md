@@ -4,6 +4,10 @@ PDS Platform is a React-based transparency prototype for the Public Distribution
 
 This is a prototype built for demonstration and academic/project evaluation. It uses realistic mock data and frontend services to show the complete user flow.
 
+## Live Demo
+
+- View the deployed application at: https://pds-platform.vercel.app/
+
 ## Judge Evaluation Guide
 
 This project should be evaluated as a working prototype with a production-ready direction, not as a live government-integrated system. The current demo shows how the product will work once connected to official beneficiary records, authorized FPS shop datasets, SMS OTP services, and a backend database.

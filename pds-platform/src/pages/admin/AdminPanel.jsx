@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ClipboardList, ScrollText, Filter, Search,
   CheckCircle, AlertTriangle, ChevronDown, User,
   Store, Calendar, FileText, ShieldAlert, Clock, Terminal,
 } from 'lucide-react';
 import {
-  MOCK_COMPLAINTS, MOCK_AUDIT_LOGS, MOCK_USERS,
+  MOCK_AUDIT_LOGS, MOCK_USERS,
   COMPLAINT_CATEGORIES, COMPLAINT_STATUS,
 } from '../../constants';
+import { getAllComplaints, transitionComplaintStatus } from '../../services/complaintService';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import toast from 'react-hot-toast';
@@ -67,16 +68,19 @@ function ComplaintRow({ complaint, onStatusChange }) {
   const nextStatuses = NEXT_STATUS[complaint.status] || [];
   const categoryLabel = COMPLAINT_CATEGORIES.find(c => c.value === complaint.category)?.label || complaint.category;
 
-  const handleStatusUpdate = (newStatus) => {
+  const handleStatusUpdate = async (newStatus) => {
     if (newStatus === 'resolved' && !note.trim()) {
       return toast.error('Add a resolution note before marking as resolved');
     }
     setSaving(true);
-    setTimeout(() => {
-      onStatusChange(complaint.id, newStatus, note);
-      setSaving(false);
+    const data = await transitionComplaintStatus(complaint.id, newStatus, note);
+    setSaving(false);
+    if (data.ok) {
+      onStatusChange(data.complaint);
       toast.success(`Complaint ${newStatus === 'resolved' ? 'resolved' : 'status updated'}`);
-    }, 700);
+    } else {
+      toast.error(data.error || 'Status update failed');
+    }
   };
 
   return (
@@ -215,25 +219,20 @@ function ComplaintRow({ complaint, onStatusChange }) {
 
 // ── Complaints Tab ────────────────────────────────────────
 function ComplaintsTab() {
-  const [complaints, setComplaints] = useState(MOCK_COMPLAINTS);
+  const [complaints, setComplaints] = useState([]);
   const [filter, setFilter]         = useState('all');
   const [search, setSearch]         = useState('');
+  const [loadError, setLoadError]   = useState(false);
 
-  const handleStatusChange = (id, newStatus, note) => {
-    setComplaints(prev =>
-      prev.map(c =>
-        c.id === id
-          ? {
-              ...c,
-              status: newStatus,
-              resolutionNote: note || c.resolutionNote,
-              resolvedAt: newStatus === 'resolved'
-                ? new Date().toISOString().split('T')[0]
-                : c.resolvedAt,
-            }
-          : c
-      )
-    );
+  useEffect(() => {
+    getAllComplaints().then(data => {
+      if (data.ok) setComplaints(data.complaints);
+      else setLoadError(true);
+    }).catch(() => setLoadError(true));
+  }, []);
+
+  const handleStatusChange = (updated) => {
+    setComplaints(prev => prev.map(c => c.id === updated.id ? updated : c));
   };
 
   const filtered = complaints.filter(c => {
@@ -256,6 +255,9 @@ function ComplaintsTab() {
   return (
     <div className="space-y-4">
 
+      {loadError && (
+        <p className="text-sm text-red-500 mb-3">Could not load complaints from server. Showing cached data.</p>
+      )}
       {/* Summary Chips */}
       <div className="grid grid-cols-4 gap-2">
         {[

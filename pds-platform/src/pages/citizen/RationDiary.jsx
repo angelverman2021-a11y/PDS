@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
-import { ArrowLeft, PlusCircle, CalendarDays, ClipboardList } from 'lucide-react';
+import { ArrowLeft, PlusCircle, CalendarDays, ClipboardList, Camera, X } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 
@@ -11,26 +11,32 @@ const DEFAULT_ENTRY = {
   quantity: 0,
   shop: '',
   notes: '',
+  photo: null,
 };
 
 export default function RationDiary() {
   const { user } = useAuth();
   const storageKey = `rationDiary_${user?.id || 'guest'}`;
+  const fileInputRef = useRef(null);
 
   const [entries, setEntries] = useState(() => {
     const saved = window.localStorage.getItem(storageKey);
     if (!saved) return [];
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return [];
-    }
+    try { return JSON.parse(saved); } catch { return []; }
   });
   const [entry, setEntry] = useState(DEFAULT_ENTRY);
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(entries));
   }, [entries, storageKey]);
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setEntry(prev => ({ ...prev, photo: ev.target.result }));
+    reader.readAsDataURL(file);
+  };
 
   const addEntry = (e) => {
     e.preventDefault();
@@ -39,9 +45,7 @@ export default function RationDiary() {
     setEntry({ ...DEFAULT_ENTRY, date: entry.date });
   };
 
-  const removeEntry = (id) => {
-    setEntries(prev => prev.filter(item => item.id !== id));
-  };
+  const removeEntry = (id) => setEntries(prev => prev.filter(item => item.id !== id));
 
   const summary = useMemo(() => ({
     totalEntries: entries.length,
@@ -126,11 +130,43 @@ export default function RationDiary() {
               <textarea
                 value={entry.notes}
                 onChange={e => setEntry(prev => ({ ...prev, notes: e.target.value }))}
-                rows={4}
+                rows={3}
                 placeholder="Any notes about availability, price, or household use."
                 className="mt-2 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </label>
+
+            {/* Photo upload */}
+            <div>
+              <p className="text-sm text-gray-700 mb-2">Ration Photo (optional)</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
+              {entry.photo ? (
+                <div className="relative w-32 h-32">
+                  <img src={entry.photo} alt="ration preview" className="w-32 h-32 object-cover rounded-xl border border-gray-200" />
+                  <button
+                    type="button"
+                    onClick={() => setEntry(prev => ({ ...prev, photo: null }))}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 rounded-xl text-sm text-gray-600 hover:border-green-500 hover:text-green-700 transition-colors"
+                >
+                  <Camera size={16} /> Post Ration Photo
+                </button>
+              )}
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Button type="submit" className="flex-1" variant="primary">
@@ -155,7 +191,6 @@ export default function RationDiary() {
             </div>
             <CalendarDays size={24} className="text-green-600" />
           </div>
-
           <div className="grid gap-3">
             <div className="rounded-3xl bg-green-50 p-4">
               <p className="text-xs text-green-700 uppercase tracking-wide">Total entries</p>
@@ -201,6 +236,9 @@ export default function RationDiary() {
                     </button>
                   </div>
                   {item.notes && <p className="mt-3 text-sm text-gray-600">{item.notes}</p>}
+                  {item.photo && (
+                    <img src={item.photo} alt="ration" className="mt-3 w-28 h-28 object-cover rounded-xl border border-gray-200" />
+                  )}
                 </div>
               ))}
             </div>

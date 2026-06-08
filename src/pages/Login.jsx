@@ -12,10 +12,23 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+const LABELS = {
+  tabs: {
+    [ROLES.CITIZEN]: 'Citizen',
+    [ROLES.DEALER]:  'Dealer',
+    [ROLES.ADMIN]:   'Admin',
+  },
+  category: {
+    PHH:  'Priority Household (PHH)',
+    AAY:  'Antyodaya Anna Yojana (AAY)',
+    NPHH: 'Non-Priority Household (NPHH)',
+  },
+};
+
 const tabs = [
-  { role: ROLES.CITIZEN, label: 'Citizen',  icon: User,        color: 'green'  },
-  { role: ROLES.DEALER,  label: 'Dealer',   icon: Store,       color: 'blue'   },
-  { role: ROLES.ADMIN,   label: 'Admin',    icon: ShieldCheck, color: 'purple' },
+  { role: ROLES.CITIZEN, label: LABELS.tabs[ROLES.CITIZEN], icon: User,        color: 'green'  },
+  { role: ROLES.DEALER,  label: LABELS.tabs[ROLES.DEALER],  icon: Store,       color: 'blue'   },
+  { role: ROLES.ADMIN,   label: LABELS.tabs[ROLES.ADMIN],   icon: ShieldCheck, color: 'purple' },
 ];
 
 const tabColor = {
@@ -30,11 +43,7 @@ const btnVariant = {
   [ROLES.ADMIN]:   'purple',
 };
 
-const CATEGORY_LABELS = {
-  PHH:  'Priority Household (PHH)',
-  AAY:  'Antyodaya Anna Yojana (AAY)',
-  NPHH: 'Non-Priority Household (NPHH)',
-};
+const CATEGORY_LABELS = LABELS.category;
 
 // ── Beneficiary Profile Card shown after verification ────
 function BeneficiaryCard({ beneficiary, onConfirm, loading }) {

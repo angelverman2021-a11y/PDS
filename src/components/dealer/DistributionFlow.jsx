@@ -20,11 +20,20 @@ const QR_CELLS = [
   true, true, false, true, true, true,
 ];
 
+const LABELS = {
+  steps: {
+    verifyBeneficiary: 'Verify Beneficiary',
+    checkAllocation:   'Check Allocation',
+    confirmItems:      'Confirm Items',
+    receipt:           'Receipt',
+  },
+};
+
 const STEPS = [
-  { id: 1, label: 'Verify Beneficiary', icon: ShieldCheck },
-  { id: 2, label: 'Check Allocation',   icon: Package     },
-  { id: 3, label: 'Confirm Items',      icon: CheckCircle },
-  { id: 4, label: 'Receipt',            icon: QrCode      },
+  { id: 1, label: LABELS.steps.verifyBeneficiary, icon: ShieldCheck },
+  { id: 2, label: LABELS.steps.checkAllocation,   icon: Package     },
+  { id: 3, label: LABELS.steps.confirmItems,      icon: CheckCircle },
+  { id: 4, label: LABELS.steps.receipt,           icon: QrCode      },
 ];
 
 // ── Step 1 ────────────────────────────────────────────────

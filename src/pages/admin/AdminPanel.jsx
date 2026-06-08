@@ -12,18 +12,33 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import toast from 'react-hot-toast';
 
+const LABELS = {
+  tabs: {
+    complaints: 'Complaint Queue',
+    audit: 'Audit Logs',
+  },
+  filters: {
+    all: 'All',
+    submitted: 'Submitted',
+    under_review: 'Under Review',
+    assigned: 'Assigned',
+    resolved: 'Resolved',
+    closed: 'Closed',
+  },
+};
+
 const TABS = [
-  { id: 'complaints', label: 'Complaint Queue', icon: ClipboardList },
-  { id: 'audit',      label: 'Audit Logs',      icon: ScrollText },
+  { id: 'complaints', label: LABELS.tabs.complaints, icon: ClipboardList },
+  { id: 'audit',      label: LABELS.tabs.audit,      icon: ScrollText },
 ];
 
 const STATUS_FILTERS = [
-  { key: 'all',          label: 'All' },
-  { key: 'submitted',    label: 'Submitted' },
-  { key: 'under_review', label: 'Under Review' },
-  { key: 'assigned',     label: 'Assigned' },
-  { key: 'resolved',     label: 'Resolved' },
-  { key: 'closed',       label: 'Closed' },
+  { key: 'all',          label: LABELS.filters.all          },
+  { key: 'submitted',    label: LABELS.filters.submitted    },
+  { key: 'under_review', label: LABELS.filters.under_review },
+  { key: 'assigned',     label: LABELS.filters.assigned     },
+  { key: 'resolved',     label: LABELS.filters.resolved     },
+  { key: 'closed',       label: LABELS.filters.closed       },
 ];
 
 const NEXT_STATUS = {

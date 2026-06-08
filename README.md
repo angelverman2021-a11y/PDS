@@ -129,8 +129,8 @@ Guest mode uses a sample citizen profile and is only meant to show the dashboard
 Use one of the registered demo ration card records:
 
 ```text
-Ration Card: MH-2024-00123
-Phone: 9876543210
+Ration Card: <your-demo-ration-card>
+Phone: <your-registered-phone>
 ```
 
 The OTP is shown in the interface for demo purposes.

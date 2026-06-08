@@ -50,7 +50,7 @@ export default function QRVerification() {
     if (!qrCode.trim()) return toast.error('Enter a QR code or Receipt ID');
     setLoading(true);
     setTimeout(() => {
-      const res = lookupQR(qrCode);
+      const res = lookupQR(sanitize(qrCode));
       setResult(res);
       setLoading(false);
       if (res.valid) toast.success('Receipt verified successfully!');
@@ -58,11 +58,13 @@ export default function QRVerification() {
     }, 800);
   };
 
+  const sanitize = (str) => str.replace(/[<>"'&]/g, '');
+
   const handleMockScan = () => {
     const id = DEMO_QR_IDS[Math.floor(Math.random() * DEMO_QR_IDS.length)];
     setQrCode(id);
     setResult(null);
-    toast('QR scanned: ' + id, { icon: '📷' });
+    toast(`QR scanned: ${sanitize(id)}`, { icon: '📷' });
   };
 
   return (

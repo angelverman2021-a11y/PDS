@@ -1,0 +1,20 @@
+async function handleVerifyOtp(otp) {
+    // ... existing logic ...
+    const verification = await verifyOtp({ phone: pendingBeneficiary.phone, otp });
+    // ...
+}
+const handleVerifyOtp = async (otp) => {
+    try {
+        const verification = await verifyOtp({ phone: pendingBeneficiary.phone, otp });
+        // handle success (e.g., update state, redirect)
+    } catch (error) {
+        // handle error (e.g., show a toast notification)
+        console.error("OTP Verification failed:", error);
+    }
+};
+// Find this function (around line 65) and add 'async'
+const handleVerifyOtp = async (otp) => { 
+    // ... existing logic ...
+    const verification = await verifyOtp({ phone: pendingBeneficiary.phone, otp });
+    // ... existing logic ...
+};

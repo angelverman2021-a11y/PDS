@@ -1,0 +1,26 @@
+export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
+export const SHOP_DATA_PROVIDER = import.meta.env.VITE_SHOP_DATA_PROVIDER || '';
+export const FPS_DATASET_URL = import.meta.env.VITE_FPS_DATASET_URL || '';
+export const OSM_NOMINATIM_ENDPOINT = import.meta.env.VITE_OSM_NOMINATIM_ENDPOINT || 'https://nominatim.openstreetmap.org/search';
+
+export const REAL_SHOP_PROVIDER_CONFIGURED = Boolean(
+  import.meta.env.VITE_GOOGLE_PLACES_API_KEY ||
+  FPS_DATASET_URL ||
+  OSM_NOMINATIM_ENDPOINT
+);
+
+export const OTP_PROVIDER = import.meta.env.VITE_OTP_PROVIDER || '';
+export const EMAIL_PROVIDER = import.meta.env.VITE_EMAIL_PROVIDER || '';
+
+export const PROJECT_SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'support@gmail.com';
+
+export const APPROVED_DEMO_TEST_NUMBERS = {
+  '+919876543210': { otp: '123456', label: 'Primary citizen demo number' },
+  '+919823001122': { otp: '654321', label: 'Secondary citizen demo number' },
+};
+
+export function getModeLabel() {
+  return DEMO_MODE ? 'Demo OTP Mode Enabled' : 'Production Mode';
+}

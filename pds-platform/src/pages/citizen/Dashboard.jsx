@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FileText, QrCode, AlertTriangle, Store,
@@ -5,74 +6,110 @@ import {
   ArrowRight, ShieldCheck, ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
-import { MOCK_ALLOCATION, MOCK_RECEIPTS, MOCK_COMPLAINTS, MOCK_SHOPS } from '../../constants';
+import { computeAllocation, ALLOCATION_STATUS } from '../../constants';
+import { fetchCitizenReceipts } from '../../services/receiptService';
+import { fetchShopById } from '../../services/shopService';
 import Badge from '../../components/common/Badge';
 import Card from '../../components/common/Card';
 
 const quickActions = [
-  { to: '/allocation',     label: 'Allocation',      icon: FileText,       color: 'green'  },
-  { to: '/receipts',       label: 'Receipts',         icon: QrCode,         color: 'blue'   },
-  { to: '/complaints/track', label: 'Track Complaint', icon: AlertTriangle,  color: 'amber'  },
-  { to: '/shops',          label: 'Shop Finder',      icon: Store,          color: 'purple' },
-  { to: '/diary',          label: 'Ration Diary',     icon: ClipboardList,  color: 'teal'   },
-  { to: '/verify',         label: 'Verify QR',        icon: ShieldCheck,    color: 'teal'   },
+  { to: '/allocation',       label: 'Allocation',      icon: FileText,      color: 'green'  },
+  { to: '/receipts',         label: 'Receipts',         icon: QrCode,        color: 'blue'   },
+  { to: '/complaints/track', label: 'Track Complaint',  icon: AlertTriangle, color: 'amber'  },
+  { to: '/shops',            label: 'Shop Finder',      icon: Store,         color: 'purple' },
+  { to: '/diary',            label: 'Ration Diary',     icon: ClipboardList, color: 'teal'   },
+  { to: '/verify',           label: 'Verify QR',        icon: ShieldCheck,   color: 'teal'   },
 ];
 
-const recentActivity = [
-  { icon: CheckCircle, text: 'Wheat 10kg collected from Ram Ration Store',  time: '3 Jul 2025',  color: 'text-green-600' },
-  { icon: QrCode,      text: 'Receipt QR-PDS-2025-07-001 verified',          time: '4 Jul 2025',  color: 'text-blue-600'  },
-  { icon: AlertTriangle, text: 'Complaint CMP-2025-00847 submitted',         time: '12 Jul 2025', color: 'text-amber-600' },
-];
+const colorMap = {
+  green:  { bg: 'bg-green-50',  icon: 'bg-green-100',  text: 'text-green-700'  },
+  blue:   { bg: 'bg-blue-50',   icon: 'bg-blue-100',   text: 'text-blue-700'   },
+  amber:  { bg: 'bg-amber-50',  icon: 'bg-amber-100',  text: 'text-amber-700'  },
+  red:    { bg: 'bg-red-50',    icon: 'bg-red-100',    text: 'text-red-700'    },
+  purple: { bg: 'bg-purple-50', icon: 'bg-purple-100', text: 'text-purple-700' },
+  teal:   { bg: 'bg-teal-50',   icon: 'bg-teal-100',   text: 'text-teal-700'   },
+};
 
 export default function CitizenDashboard() {
   const { user } = useAuth();
-  const shop = MOCK_SHOPS.find(s => s.id === user?.shopId);
-  const latestReceipt = MOCK_RECEIPTS[0];
-  const activeComplaints = MOCK_COMPLAINTS.filter(c => c.status !== 'resolved' && c.status !== 'closed').length;
+  const [receipts, setReceipts]   = useState([]);
+  const [shop, setShop]           = useState(null);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([
+      fetchCitizenReceipts(user.id),
+      fetchShopById(user.shopId),
+    ]).then(([r, s]) => {
+      setReceipts(r);
+      setShop(s);
+      setLoadingData(false);
+    });
+  }, [user]);
+
+  // Compute live allocation from user category + family size
+  const entitlements = user ? computeAllocation(user.category, user.familySize) : [];
+  const latestReceipt = receipts[0] ?? null;
+  const now = new Date();
+  const currentMonth = now.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+
+  // Derive allocation status from latest receipt this month
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const thisMonthReceipt = receipts.find(r => r.monthKey === monthKey);
+  const allocationStatus = thisMonthReceipt
+    ? (thisMonthReceipt.isPartial ? ALLOCATION_STATUS.PARTIAL : ALLOCATION_STATUS.COLLECTED)
+    : ALLOCATION_STATUS.PENDING;
+
+  // Recent activity derived from live receipts
+  const recentActivity = receipts.slice(0, 3).map(r => ({
+    icon: QrCode,
+    text: `Receipt ${r.qrCode} — ${r.shopName}`,
+    time: new Date(r.generatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+    color: 'text-blue-600',
+  }));
 
   const summaryCards = [
     {
       label: 'Allocation Status',
-      value: 'Partial',
-      sub: 'Rice pending · July 2025',
+      value: allocationStatus === ALLOCATION_STATUS.COLLECTED ? 'Collected'
+           : allocationStatus === ALLOCATION_STATUS.PARTIAL   ? 'Partial'
+           : 'Pending',
+      sub: `${entitlements.length} items · ${currentMonth}`,
       icon: Package,
-      color: 'blue',
+      color: allocationStatus === ALLOCATION_STATUS.COLLECTED ? 'green'
+           : allocationStatus === ALLOCATION_STATUS.PARTIAL   ? 'amber' : 'blue',
       to: '/allocation',
     },
     {
       label: 'Last Receipt',
-      value: latestReceipt.month,
-      sub: `₹${latestReceipt.totalAmount} · ${latestReceipt.shopName}`,
+      value: latestReceipt ? latestReceipt.month : '—',
+      sub: latestReceipt ? `₹${latestReceipt.totalAmount} · ${latestReceipt.shopName}` : 'No receipts yet',
       icon: QrCode,
       color: 'green',
       to: '/receipts',
     },
     {
-      label: 'Active Complaints',
-      value: activeComplaints,
-      sub: activeComplaints > 0 ? 'Under review' : 'No open complaints',
+      label: 'Total Receipts',
+      value: receipts.length,
+      sub: receipts.length > 0 ? 'View all receipts' : 'No receipts yet',
       icon: AlertTriangle,
-      color: activeComplaints > 0 ? 'amber' : 'green',
-      to: '/complaints/track',
+      color: receipts.length > 0 ? 'blue' : 'green',
+      to: '/receipts',
     },
     {
       label: 'Shop Stock',
-      value: shop ? (shop.stockStatus === 'available' ? 'Available' : shop.stockStatus === 'low' ? 'Low' : 'Out') : '—',
+      value: loadingData ? '…'
+           : shop ? (shop.stockStatus === 'available' ? 'Available'
+                   : shop.stockStatus === 'low'       ? 'Low' : 'Out')
+           : '—',
       sub: shop?.name ?? '—',
       icon: Store,
-      color: shop?.stockStatus === 'available' ? 'green' : shop?.stockStatus === 'low' ? 'amber' : 'red',
+      color: shop?.stockStatus === 'available' ? 'green'
+           : shop?.stockStatus === 'low'       ? 'amber' : 'red',
       to: '/shops',
     },
   ];
-
-  const colorMap = {
-    green:  { bg: 'bg-green-50',  icon: 'bg-green-100',  text: 'text-green-700'  },
-    blue:   { bg: 'bg-blue-50',   icon: 'bg-blue-100',   text: 'text-blue-700'   },
-    amber:  { bg: 'bg-amber-50',  icon: 'bg-amber-100',  text: 'text-amber-700'  },
-    red:    { bg: 'bg-red-50',    icon: 'bg-red-100',    text: 'text-red-700'    },
-    purple: { bg: 'bg-purple-50', icon: 'bg-purple-100', text: 'text-purple-700' },
-    teal:   { bg: 'bg-teal-50',   icon: 'bg-teal-100',   text: 'text-teal-700'   },
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
@@ -114,7 +151,7 @@ export default function CitizenDashboard() {
           <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
             <TrendingUp size={18} className="text-green-600" /> Quick Actions
           </h2>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {quickActions.map(({ to, label, icon: Icon, color }) => {
               const c = colorMap[color] ?? colorMap.green;
               return (
@@ -148,54 +185,58 @@ export default function CitizenDashboard() {
               to="/receipts"
               className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/10 hover:bg-blue-800 transition"
             >
-              Open AI Audit
-              <ArrowRight size={14} />
+              Open AI Audit <ArrowRight size={14} />
             </Link>
           </div>
         </Card>
 
-        {/* Allocation Snapshot */}
+        {/* Live Allocation Snapshot */}
         <Card>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-gray-800 flex items-center gap-2">
-              <Package size={18} className="text-blue-600" /> July 2025 Allocation
+              <Package size={18} className="text-blue-600" /> {currentMonth} Allocation
             </h2>
-            <Badge status={MOCK_ALLOCATION.status} />
+            <Badge status={allocationStatus} />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {Object.entries(MOCK_ALLOCATION.entitlement).map(([key, ent]) => {
-              const col = MOCK_ALLOCATION.collected[key];
-              const done = col >= ent;
-              return (
-                <div key={key} className={`rounded-xl p-3 text-center ${done ? 'bg-green-50' : 'bg-amber-50'}`}>
-                  <p className="text-xs text-gray-500 capitalize mb-1">{key.replace('_', ' ')}</p>
-                  <p className={`text-lg font-extrabold ${done ? 'text-green-700' : 'text-amber-700'}`}>{col}/{ent}</p>
-                  <p className="text-xs text-gray-400">{done ? '✓ Collected' : 'Pending'}</p>
+          {entitlements.length === 0 ? (
+            <p className="text-sm text-gray-400">No entitlements found for your card category.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {entitlements.map(item => (
+                <div key={item.id} className="rounded-xl p-3 text-center bg-blue-50">
+                  <p className="text-lg">{item.icon}</p>
+                  <p className="text-xs text-gray-500 mt-1">{item.name}</p>
+                  <p className="text-lg font-extrabold text-blue-700">{item.entitledQty} {item.unit}</p>
+                  <p className="text-xs text-gray-400">₹{item.totalPrice}</p>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
           <Link to="/allocation" className="mt-4 flex items-center gap-1 text-sm text-green-700 font-medium hover:underline">
             View full allocation <ArrowRight size={14} />
           </Link>
         </Card>
 
-        {/* Recent Activity */}
+        {/* Recent Activity from live receipts */}
         <Card>
           <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
             <Clock size={18} className="text-gray-500" /> Recent Activity
           </h2>
-          <div className="space-y-3">
-            {recentActivity.map(({ icon: Icon, text, time, color }, i) => (
-              <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
-                <Icon size={16} className={`${color} shrink-0 mt-0.5`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-700">{text}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{time}</p>
+          {recentActivity.length === 0 ? (
+            <p className="text-sm text-gray-400">No recent activity yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {recentActivity.map(({ icon: Icon, text, time, color }, i) => (
+                <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
+                  <Icon size={16} className={`${color} shrink-0 mt-0.5`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700">{text}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{time}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
 
       </div>

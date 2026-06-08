@@ -45,9 +45,13 @@ export async function confirmDistribution(beneficiary, entitlements, distributed
 
 // ── Step 4: Generate Receipt ──────────────────────────────
 export async function generateReceipt(beneficiary, shopId, shopName, distributedItems, confirmedAt) {
+  const token = localStorage.getItem('pds_token');
   const res = await fetch(`${BASE}/generate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
     body: JSON.stringify({ rationCardNo: beneficiary.rationCardNo, shopId, shopName, distributedItems, confirmedAt }),
   });
   const data = await res.json();
@@ -57,7 +61,10 @@ export async function generateReceipt(beneficiary, shopId, shopName, distributed
 
 // ── Fetch receipts for a citizen ─────────────────────────
 export async function fetchCitizenReceipts(citizenId) {
-  const res = await fetch(`${BASE}/citizen/${citizenId}`);
+  const token = localStorage.getItem('pds_token');
+  const res = await fetch(`${BASE}/citizen/${citizenId}`, {
+    headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+  });
   const data = await res.json();
   return data.ok ? data.receipts : [];
 }

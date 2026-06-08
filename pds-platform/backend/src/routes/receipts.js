@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import { BENEFICIARY_REGISTRY, DEMO_OTPS, normalizePhone } from '../data/registry.js';
 import db, { rowToReceipt } from '../db/index.js';
+import { requireAuth, requireRole } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
@@ -118,8 +117,8 @@ router.post('/confirm-distribution', (req, res) => {
   res.json({ ok: true, success: true, confirmedAt: new Date().toISOString() });
 });
 
-// ── POST /api/v1/receipts/generate ───────────────────────
-router.post('/generate', (req, res) => {
+// ── POST /api/v1/receipts/generate ─────────────────────── (dealer only)
+router.post('/generate', requireAuth, requireRole('dealer'), (req, res) => {
   const { rationCardNo, shopId, shopName, distributedItems, confirmedAt } = req.body;
   if (!rationCardNo || !shopId || !shopName || !distributedItems) {
     return res.status(400).json({ ok: false, error: 'rationCardNo, shopId, shopName and distributedItems are required' });
@@ -150,8 +149,8 @@ router.post('/generate', (req, res) => {
   res.status(201).json({ ok: true, success: true, receipt: rowToReceipt({ ...row, qr_code: row.qrCode, month_key: row.monthKey, shop_id: row.shopId, shop_name: row.shopName, dealer_id: row.dealerId, citizen_id: row.citizenId, ration_card_no: row.rationCardNo, family_size: row.familySize, distributed_items: row.distributedItems, total_amount: row.totalAmount, generated_at: row.generatedAt, verified_at: row.verifiedAt, verification_method: row.verificationMethod, dealer_confirmed_at: row.dealerConfirmedAt, allocation_checked: row.allocationChecked, is_partial: row.isPartial }) });
 });
 
-// ── GET /api/v1/receipts/citizen/:citizenId ───────────────
-router.get('/citizen/:citizenId', (req, res) => {
+// ── GET /api/v1/receipts/citizen/:citizenId ────────────── (auth required)
+router.get('/citizen/:citizenId', requireAuth, (req, res) => {
   const rows = stmts.getByCitizenId.all(req.params.citizenId);
   res.json({ ok: true, receipts: rows.map(rowToReceipt) });
 });

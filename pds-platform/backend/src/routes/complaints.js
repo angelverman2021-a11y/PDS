@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import db, { rowToComplaint } from '../db/index.js';
+import { requireAuth, requireRole } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
@@ -34,7 +35,7 @@ function generateComplaintNo(districtCode = 'PUN') {
 }
 
 // ── POST /api/v1/complaints ───────────────────────────────
-router.post('/', (req, res) => {
+router.post('/', requireAuth, (req, res) => {
   const { shopId, shopName, category, description } = req.body;
   if (!shopId || !shopName) return res.status(400).json({ ok: false, error: 'shopId and shopName are required' });
   if (!category)            return res.status(400).json({ ok: false, error: 'category is required' });
@@ -89,7 +90,7 @@ router.get('/', (req, res) => {
 });
 
 // ── PATCH /api/v1/complaints/:id/status ──────────────────
-router.patch('/:id/status', (req, res) => {
+router.patch('/:id/status', requireAuth, requireRole('admin'), (req, res) => {
   const { nextStatus, note } = req.body;
   const row = stmts.getById.get(req.params.id, req.params.id);
   if (!row) return res.status(404).json({ ok: false, error: 'COMPLAINT_NOT_FOUND' });

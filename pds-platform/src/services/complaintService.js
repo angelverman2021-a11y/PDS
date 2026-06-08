@@ -2,9 +2,13 @@ import { API_BASE_URL } from '../config/platformConfig';
 
 // ── POST /api/v1/complaints ───────────────────────────────
 export async function createComplaint({ shopId, shopName, category, description }) {
+  const token = localStorage.getItem('pds_token');
   const res = await fetch(`${API_BASE_URL}/api/v1/complaints`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
     body: JSON.stringify({ shopId, shopName, category, description }),
   });
   return res.json(); // { ok, complaint } | { ok: false, error }

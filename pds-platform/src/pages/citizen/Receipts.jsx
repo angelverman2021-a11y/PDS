@@ -7,7 +7,9 @@ import {
 import { RECEIPT_STATUS } from '../../constants';
 import { fetchCitizenReceipts } from '../../services/receiptService';
 import { useAuth } from '../../context/useAuth';
+import { SkeletonReceiptList } from '../../components/common/Skeleton';
 import toast from 'react-hot-toast';
+import { jsPDF } from 'jspdf';
 
 const STATUS_CONFIG = {
   [RECEIPT_STATUS.VERIFIED]:  { label: 'Verified',  color: 'bg-green-100 text-green-700',  icon: ShieldCheck  },
@@ -156,7 +158,45 @@ export default function Receipts() {
   }, [user]);
 
   const handleDownload = (receipt) => {
-    toast.success(`Receipt for ${receipt.month} downloaded as PDF`);
+    const doc = new jsPDF();
+    const line = (txt, y) => doc.text(txt, 14, y);
+
+    doc.setFontSize(18);
+    doc.setTextColor(22, 101, 52);
+    line('PDS Platform — Digital Receipt', 18);
+
+    doc.setFontSize(11);
+    doc.setTextColor(0);
+    line(`Receipt ID : ${receipt.qrCode}`, 30);
+    line(`Month      : ${receipt.month}`, 38);
+    line(`Shop       : ${receipt.shopName}`, 46);
+    line(`Issued     : ${new Date(receipt.generatedAt).toLocaleDateString('en-IN')}`, 54);
+    line(`Category   : ${receipt.category}  |  Family: ${receipt.familySize}`, 62);
+    line(`Status     : ${receipt.status}`, 70);
+
+    doc.setFontSize(12);
+    doc.setTextColor(22, 101, 52);
+    line('Items Distributed', 82);
+    doc.setTextColor(0);
+    doc.setFontSize(11);
+
+    let y = 90;
+    receipt.distributedItems.forEach(item => {
+      line(`  ${item.name.padEnd(16)} ${item.qty} ${item.unit}  @  ₹${item.pricePerUnit}/${item.unit}  =  ₹${item.total}`, y);
+      y += 8;
+    });
+
+    y += 4;
+    doc.setFontSize(13);
+    doc.setTextColor(22, 101, 52);
+    line(`Total Amount: ₹${receipt.totalAmount}`, y);
+
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    line('This is a digitally generated receipt. Verify at pds-platform.vercel.app/verify', y + 14);
+
+    doc.save(`PDS-Receipt-${receipt.qrCode}.pdf`);
+    toast.success(`Receipt ${receipt.month} downloaded as PDF`);
   };
 
   const handleVerify = (receipt) => {
@@ -383,9 +423,7 @@ export default function Receipts() {
         </div>
 
         {receiptsLoading ? (
-          <div className="text-center py-16">
-            <span className="w-8 h-8 border-2 border-green-700/30 border-t-green-700 rounded-full animate-spin inline-block" />
-          </div>
+          <SkeletonReceiptList />
         ) : myReceipts.length === 0 ? (
           <div className="text-center py-16">
             <QrCode size={48} className="mx-auto text-gray-300 mb-3" />

@@ -1,6 +1,7 @@
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import AppRoutes from './routes/AppRoutes';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
@@ -8,7 +9,8 @@ import Footer from './components/common/Footer';
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
         <div className="min-h-screen flex flex-col">
           <Navbar />
           <main className="flex-1">
@@ -28,7 +30,8 @@ export default function App() {
             error:   { iconTheme: { primary: '#dc2626', secondary: '#fff' } },
           }}
         />
-      </AuthProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </BrowserRouter>
   );
 }

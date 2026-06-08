@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FileText, QrCode, AlertTriangle, Store,
-  Package, CheckCircle, Clock, TrendingUp,
+  Package, Clock, TrendingUp,
   ArrowRight, ShieldCheck, ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
@@ -11,6 +11,7 @@ import { fetchCitizenReceipts } from '../../services/receiptService';
 import { fetchShopById } from '../../services/shopService';
 import Badge from '../../components/common/Badge';
 import Card from '../../components/common/Card';
+import { SkeletonSummaryCards } from '../../components/common/Skeleton';
 
 const quickActions = [
   { to: '/allocation',       label: 'Allocation',      icon: FileText,      color: 'green'  },
@@ -32,9 +33,9 @@ const colorMap = {
 
 export default function CitizenDashboard() {
   const { user } = useAuth();
-  const [receipts, setReceipts]   = useState([]);
-  const [shop, setShop]           = useState(null);
-  const [loadingData, setLoadingData] = useState(true);
+  const [receipts, setReceipts] = useState([]);
+  const [shop, setShop]         = useState(null);
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -44,24 +45,20 @@ export default function CitizenDashboard() {
     ]).then(([r, s]) => {
       setReceipts(r);
       setShop(s);
-      setLoadingData(false);
+      setLoading(false);
     });
   }, [user]);
 
-  // Compute live allocation from user category + family size
-  const entitlements = user ? computeAllocation(user.category, user.familySize) : [];
+  const entitlements  = user ? computeAllocation(user.category, user.familySize) : [];
   const latestReceipt = receipts[0] ?? null;
-  const now = new Date();
-  const currentMonth = now.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
-
-  // Derive allocation status from latest receipt this month
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const thisMonthReceipt = receipts.find(r => r.monthKey === monthKey);
-  const allocationStatus = thisMonthReceipt
-    ? (thisMonthReceipt.isPartial ? ALLOCATION_STATUS.PARTIAL : ALLOCATION_STATUS.COLLECTED)
+  const now           = new Date();
+  const currentMonth  = now.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+  const monthKey      = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const thisMonth     = receipts.find(r => r.monthKey === monthKey);
+  const allocStatus   = thisMonth
+    ? (thisMonth.isPartial ? ALLOCATION_STATUS.PARTIAL : ALLOCATION_STATUS.COLLECTED)
     : ALLOCATION_STATUS.PENDING;
 
-  // Recent activity derived from live receipts
   const recentActivity = receipts.slice(0, 3).map(r => ({
     icon: QrCode,
     text: `Receipt ${r.qrCode} — ${r.shopName}`,
@@ -72,13 +69,12 @@ export default function CitizenDashboard() {
   const summaryCards = [
     {
       label: 'Allocation Status',
-      value: allocationStatus === ALLOCATION_STATUS.COLLECTED ? 'Collected'
-           : allocationStatus === ALLOCATION_STATUS.PARTIAL   ? 'Partial'
-           : 'Pending',
+      value: allocStatus === ALLOCATION_STATUS.COLLECTED ? 'Collected'
+           : allocStatus === ALLOCATION_STATUS.PARTIAL   ? 'Partial' : 'Pending',
       sub: `${entitlements.length} items · ${currentMonth}`,
       icon: Package,
-      color: allocationStatus === ALLOCATION_STATUS.COLLECTED ? 'green'
-           : allocationStatus === ALLOCATION_STATUS.PARTIAL   ? 'amber' : 'blue',
+      color: allocStatus === ALLOCATION_STATUS.COLLECTED ? 'green'
+           : allocStatus === ALLOCATION_STATUS.PARTIAL   ? 'amber' : 'blue',
       to: '/allocation',
     },
     {
@@ -99,10 +95,9 @@ export default function CitizenDashboard() {
     },
     {
       label: 'Shop Stock',
-      value: loadingData ? '…'
+      value: loading ? '…'
            : shop ? (shop.stockStatus === 'available' ? 'Available'
-                   : shop.stockStatus === 'low'       ? 'Low' : 'Out')
-           : '—',
+                   : shop.stockStatus === 'low'       ? 'Low' : 'Out') : '—',
       sub: shop?.name ?? '—',
       icon: Store,
       color: shop?.stockStatus === 'available' ? 'green'
@@ -114,7 +109,6 @@ export default function CitizenDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
 
-      {/* Welcome Header */}
       <div className="bg-gradient-to-r from-green-700 to-emerald-600 text-white px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <p className="text-green-200 text-sm mb-1">Welcome back</p>
@@ -129,24 +123,26 @@ export default function CitizenDashboard() {
 
       <div className="max-w-4xl mx-auto px-4 mt-6 space-y-6">
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {summaryCards.map(({ label, value, sub, icon: Icon, color, to }) => {
-            const c = colorMap[color];
-            return (
-              <Link key={label} to={to} className={`${c.bg} rounded-2xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all border border-transparent hover:border-gray-100`}>
-                <div className={`w-10 h-10 ${c.icon} rounded-xl flex items-center justify-center mb-3`}>
-                  <Icon size={18} className={c.text} />
-                </div>
-                <p className="text-xs text-gray-500 font-medium">{label}</p>
-                <p className={`text-xl font-extrabold ${c.text} mt-0.5`}>{value}</p>
-                <p className="text-xs text-gray-400 mt-0.5 truncate">{sub}</p>
-              </Link>
-            );
-          })}
-        </div>
+        {loading ? (
+          <SkeletonSummaryCards />
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {summaryCards.map(({ label, value, sub, icon: Icon, color, to }) => {
+              const c = colorMap[color];
+              return (
+                <Link key={label} to={to} className={`${c.bg} rounded-2xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all border border-transparent hover:border-gray-100`}>
+                  <div className={`w-10 h-10 ${c.icon} rounded-xl flex items-center justify-center mb-3`}>
+                    <Icon size={18} className={c.text} />
+                  </div>
+                  <p className="text-xs text-gray-500 font-medium">{label}</p>
+                  <p className={`text-xl font-extrabold ${c.text} mt-0.5`}>{value}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">{sub}</p>
+                </Link>
+              );
+            })}
+          </div>
+        )}
 
-        {/* Quick Actions */}
         <Card>
           <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
             <TrendingUp size={18} className="text-green-600" /> Quick Actions
@@ -155,11 +151,7 @@ export default function CitizenDashboard() {
             {quickActions.map(({ to, label, icon: Icon, color }) => {
               const c = colorMap[color] ?? colorMap.green;
               return (
-                <Link
-                  key={to}
-                  to={to}
-                  className={`flex flex-col items-center gap-2 p-3 ${c.bg} rounded-xl hover:shadow-sm transition-all text-center`}
-                >
+                <Link key={to} to={to} className={`flex flex-col items-center gap-2 p-3 ${c.bg} rounded-xl hover:shadow-sm transition-all text-center`}>
                   <div className={`w-10 h-10 ${c.icon} rounded-xl flex items-center justify-center`}>
                     <Icon size={18} className={c.text} />
                   </div>
@@ -170,7 +162,6 @@ export default function CitizenDashboard() {
           </div>
         </Card>
 
-        {/* AI Audit Callout */}
         <Card>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -178,25 +169,21 @@ export default function CitizenDashboard() {
                 <FileText size={18} className="text-blue-600" /> AI Receipt OCR Audit
               </p>
               <p className="text-xs text-gray-500 mt-2 max-w-2xl">
-                Quickly validate your physical receipt against digital state allocations using the simulated AI audit in Receipts.
+                Validate your physical receipt against digital state allocations using the simulated AI audit in Receipts.
               </p>
             </div>
-            <Link
-              to="/receipts"
-              className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/10 hover:bg-blue-800 transition"
-            >
+            <Link to="/receipts" className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/10 hover:bg-blue-800 transition">
               Open AI Audit <ArrowRight size={14} />
             </Link>
           </div>
         </Card>
 
-        {/* Live Allocation Snapshot */}
         <Card>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-gray-800 flex items-center gap-2">
               <Package size={18} className="text-blue-600" /> {currentMonth} Allocation
             </h2>
-            <Badge status={allocationStatus} />
+            <Badge status={allocStatus} />
           </div>
           {entitlements.length === 0 ? (
             <p className="text-sm text-gray-400">No entitlements found for your card category.</p>
@@ -217,7 +204,6 @@ export default function CitizenDashboard() {
           </Link>
         </Card>
 
-        {/* Recent Activity from live receipts */}
         <Card>
           <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
             <Clock size={18} className="text-gray-500" /> Recent Activity

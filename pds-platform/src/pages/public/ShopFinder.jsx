@@ -5,6 +5,7 @@ import { STOCK_STATUS } from '../../constants';
 import { fetchAllShops, searchShopsByPincode } from '../../services/shopService';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
+import { SkeletonShopGrid } from '../../components/common/Skeleton';
 
 const filters = [
   { key: 'all',                     label: 'All Shops' },
@@ -120,7 +121,7 @@ export default function ShopFinder() {
         )}
 
         {loading ? (
-          <Loader text="Finding shops…" />
+          <SkeletonShopGrid />
         ) : shops.length === 0 ? (
           <div className="text-center py-20">
             <Store size={48} className="mx-auto text-gray-300 mb-3" />

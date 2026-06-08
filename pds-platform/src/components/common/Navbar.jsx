@@ -1,10 +1,11 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/useAuth';
+import { useLang } from '../../context/LanguageContext';
 import { ROLES } from '../../constants';
 import { DEMO_MODE, getModeLabel } from '../../config/platformConfig';
 import {
   Home, Store, QrCode, FileText, AlertTriangle,
-  LayoutDashboard, LogOut, LogIn, ShieldCheck, Truck,
+  LayoutDashboard, LogOut, LogIn, ShieldCheck, Truck, Languages,
 } from 'lucide-react';
 
 const citizenLinks = [
@@ -35,6 +36,7 @@ const publicLinks = [
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { lang, toggle } = useLang();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -92,8 +94,16 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Auth */}
+          {/* Lang + Auth */}
           <div className="flex items-center gap-3">
+            <button
+              onClick={toggle}
+              title={lang === 'en' ? 'Switch to Hindi' : 'Switch to English'}
+              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-sm"
+            >
+              <Languages size={15} />
+              {lang === 'en' ? 'हिंदी' : 'EN'}
+            </button>
             {user ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm opacity-90">

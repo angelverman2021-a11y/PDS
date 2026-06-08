@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
+import complaintsRouter from './routes/complaints.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 const app = express();
@@ -30,6 +31,7 @@ app.use('/api', rateLimit({
 // ── Routes ────────────────────────────────────────────────
 app.use('/api/v1', healthRouter);
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/complaints', complaintsRouter);
 
 // ── 404 + Error handlers ──────────────────────────────────
 app.use(notFound);

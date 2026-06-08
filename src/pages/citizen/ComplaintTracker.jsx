@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search, CheckCircle, Clock, AlertTriangle, XCircle, FileSearch, UserCheck, LockKeyhole } from 'lucide-react';
-import { MOCK_COMPLAINTS, COMPLAINT_STATUS } from '../../constants';
+import { COMPLAINT_STATUS } from '../../constants';
+import { getComplaintById } from '../../services/complaintService';
 import Badge from '../../components/common/Badge';
 import toast from 'react-hot-toast';
 
@@ -32,15 +33,12 @@ export default function ComplaintTracker() {
   const [complaint, setComplaint] = useState(null);
   const [notFound, setNotFound]   = useState(false);
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return toast.error('Enter a Complaint ID');
-    const found = MOCK_COMPLAINTS.find(
-      c => c.complaintNo.toLowerCase() === query.trim().toLowerCase() ||
-           c.id.toLowerCase() === query.trim().toLowerCase()
-    );
-    if (found) {
-      setComplaint(found);
+    const result = await getComplaintById(query.trim());
+    if (result.ok) {
+      setComplaint(result.complaint);
       setNotFound(false);
       toast.success('Complaint found!');
     } else {

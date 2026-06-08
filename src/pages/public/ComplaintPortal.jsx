@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { AlertTriangle, Store, FileText, Upload, CheckCircle, Copy } from 'lucide-react';
 import { COMPLAINT_CATEGORIES } from '../../constants';
 import { getRegisteredFpsShops } from '../../services/shopService';
+import { createComplaint } from '../../services/complaintService';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import toast from 'react-hot-toast';
@@ -13,11 +14,6 @@ const STEPS = [
   { id: 3, label: 'Describe Issue',  icon: FileText },
   { id: 4, label: 'Evidence',        icon: Upload },
 ];
-
-function generateComplaintNo() {
-  const num = Math.floor(Math.random() * 90000) + 10000;
-  return `CMP-PUN-2025-${num}`;
-}
 
 export default function ComplaintPortal() {
   const location = useLocation();
@@ -52,14 +48,21 @@ export default function ComplaintPortal() {
   const back = () => setStep(s => s - 1);
 
   // ── Submit ───────────────────────────────────────────────
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setLoading(true);
-    setTimeout(() => {
-      const no = generateComplaintNo();
-      setComplaintNo(no);
-      setSubmitted(true);
-      setLoading(false);
-    }, 1000);
+    const result = await createComplaint({
+      shopId,
+      shopName: selectedShop?.name,
+      category,
+      description,
+    });
+    setLoading(false);
+    if (!result.ok) {
+      toast.error('Failed to submit complaint. Please try again.');
+      return;
+    }
+    setComplaintNo(result.complaint.complaintNo);
+    setSubmitted(true);
   };
 
   const copyToClipboard = () => {

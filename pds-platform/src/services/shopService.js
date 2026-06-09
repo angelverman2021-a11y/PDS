@@ -28,6 +28,22 @@ export function getRegisteredFpsShops() {
   return shopCache;
 }
 
+export async function fetchNearbyShops(latitude, longitude, radiusKm = 10) {
+  try {
+    const res = await fetch(`${BASE}/nearby?lat=${latitude}&lon=${longitude}&radius=${radiusKm}&limit=20`);
+    const data = await res.json();
+    if (!data.ok) return { ok: false, shops: [] };
+    const shops = data.shops.map(shop => ({
+      ...shop,
+      mapsLink: shop.mapsLink ?? generateMapsLink(shop),
+    }));
+    cacheShops(shops);
+    return { ok: true, source: data.provider, shops };
+  } catch {
+    return { ok: false, shops: [] };
+  }
+}
+
 export async function fetchAllShops() {
   try {
     const res = await fetch(BASE);

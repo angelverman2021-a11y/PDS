@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, AlertTriangle, ArrowRight, Store, Star, Clock, Navigation } from 'lucide-react';
+import {
+  Search, MapPin, AlertTriangle, ArrowRight, Store,
+  Star, Clock, Navigation, LocateFixed, Loader2,
+} from 'lucide-react';
 import { STOCK_STATUS } from '../../constants';
-import { fetchAllShops, searchShopsByPincode } from '../../services/shopService';
+import { fetchAllShops, searchShopsByPincode, fetchNearbyShops } from '../../services/shopService';
 import Badge from '../../components/common/Badge';
-import Loader from '../../components/common/Loader';
 import { SkeletonShopGrid } from '../../components/common/Skeleton';
 
 const filters = [
@@ -15,14 +17,15 @@ const filters = [
 ];
 
 export default function ShopFinder() {
-  const [search, setSearch]   = useState('');
-  const [pincode, setPincode] = useState('');
-  const [filter, setFilter]   = useState('all');
-  const [loading, setLoading] = useState(true);
-  const [searched, setSearched] = useState(false);
+  const [search, setSearch]       = useState('');
+  const [pincode, setPincode]     = useState('');
+  const [filter, setFilter]       = useState('all');
+  const [loading, setLoading]     = useState(true);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError]   = useState('');
+  const [mode, setMode]           = useState('all');   // 'all' | 'pincode' | 'nearby'
   const [serviceResult, setServiceResult] = useState({ ok: true, shops: [], source: 'db' });
 
-  // Load all shops from DB on mount
   useEffect(() => {
     fetchAllShops().then(shops => {
       setServiceResult({ ok: true, shops, source: 'db' });
@@ -32,11 +35,39 @@ export default function ShopFinder() {
 
   const handleSearch = async (e) => {
     e.preventDefault();
+    if (!pincode) return;
     setLoading(true);
-    setSearched(true);
+    setMode('pincode');
+    setGeoError('');
     const result = await searchShopsByPincode({ pincode });
     setServiceResult(result);
     setLoading(false);
+  };
+
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported by your browser.');
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError('');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setLoading(true);
+        setMode('nearby');
+        const result = await fetchNearbyShops(latitude, longitude, 10);
+        setServiceResult(result.ok ? result : { ok: false, shops: [] });
+        setLoading(false);
+        setGeoLoading(false);
+      },
+      (err) => {
+        setGeoLoading(false);
+        if (err.code === 1) setGeoError('Location access denied. Please allow location in your browser.');
+        else setGeoError('Could not get your location. Try entering a pincode instead.');
+      },
+      { timeout: 10000 }
+    );
   };
 
   const shops = serviceResult.shops.filter(s => {
@@ -46,6 +77,13 @@ export default function ShopFinder() {
       s.address.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
+
+  const sourceLabel = {
+    osm: 'Live data · OpenStreetMap',
+    google_places: 'Live data · Google Places',
+    fps_dataset: 'Authorized FPS dataset',
+    db: 'Registered shops',
+  }[serviceResult.source] ?? 'Registered shops';
 
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
@@ -57,9 +95,9 @@ export default function ShopFinder() {
             <Store size={20} />
             <p className="text-green-200 text-sm">Public Directory</p>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-5">Find Ration Shops</h1>
-          <p className="text-green-100 text-sm mb-4 max-w-2xl">
-            Browse all registered shops or enter a pincode to find shops near you.
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Find Ration Shops</h1>
+          <p className="text-green-100 text-sm mb-5 max-w-2xl">
+            Search by pincode, shop name, or use your device location to find nearby ration shops.
           </p>
 
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
@@ -91,13 +129,36 @@ export default function ShopFinder() {
               Search
             </button>
           </form>
+
+          {/* Use My Location */}
+          <div className="mt-3 flex items-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={handleUseLocation}
+              disabled={geoLoading}
+              className="inline-flex items-center gap-2 bg-white/15 border border-white/30 hover:bg-white/25 px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-60"
+            >
+              {geoLoading
+                ? <Loader2 size={15} className="animate-spin" />
+                : <LocateFixed size={15} />}
+              {geoLoading ? 'Getting location…' : 'Use My Location'}
+            </button>
+            {mode === 'nearby' && !geoLoading && (
+              <span className="text-green-200 text-xs flex items-center gap-1">
+                <Navigation size={12} /> Showing shops within 10 km of your location
+              </span>
+            )}
+          </div>
+          {geoError && (
+            <p className="mt-2 text-red-200 text-xs">{geoError}</p>
+          )}
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 mt-6">
 
         {/* Filter Pills */}
-        <div className="flex gap-2 flex-wrap mb-6">
+        <div className="flex gap-2 flex-wrap mb-5 items-center">
           {filters.map(({ key, label }) => (
             <button
               key={key}
@@ -111,12 +172,15 @@ export default function ShopFinder() {
               {label}
             </button>
           ))}
-          <span className="ml-auto text-sm text-gray-400 self-center">{shops.length} shops found</span>
+          <span className="ml-auto text-xs text-gray-400 self-center flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+            {sourceLabel} · {shops.length} shops
+          </span>
         </div>
 
-        {searched && !serviceResult.ok && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6 text-sm text-amber-800">
-            No external results for this pincode — showing all registered shops.
+        {!serviceResult.ok && mode !== 'all' && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5 text-sm text-amber-800">
+            Could not fetch live data — showing registered shops instead.
           </div>
         )}
 
@@ -125,13 +189,13 @@ export default function ShopFinder() {
         ) : shops.length === 0 ? (
           <div className="text-center py-20">
             <Store size={48} className="mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-500 font-medium">No shops match your search.</p>
-            <p className="text-gray-400 text-sm mt-1">Try a different pincode or clear the filters.</p>
+            <p className="text-gray-500 font-medium">No shops found.</p>
+            <p className="text-gray-400 text-sm mt-1">Try a different pincode, area name, or use your location.</p>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {shops.map((shop, index) => (
-              <ShopCard key={shop.id} shop={shop} recommended={index === 0 && !!pincode} />
+              <ShopCard key={shop.id} shop={shop} recommended={index === 0 && mode !== 'all'} />
             ))}
           </div>
         )}
@@ -149,7 +213,7 @@ function ShopCard({ shop, recommended }) {
         </div>
         <div className="flex flex-col items-end gap-1">
           {recommended && (
-            <span className="rounded-full bg-blue-100 text-blue-700 px-2 py-0.5 text-xs font-semibold">Recommended</span>
+            <span className="rounded-full bg-blue-100 text-blue-700 px-2 py-0.5 text-xs font-semibold">Nearest</span>
           )}
           <Badge status={shop.stockStatus} />
         </div>
@@ -165,18 +229,22 @@ function ShopCard({ shop, recommended }) {
       <div className="grid grid-cols-2 gap-2 text-xs mb-3">
         <div className="bg-gray-50 rounded-lg p-2">
           <p className="text-gray-400 flex items-center gap-1"><Navigation size={10} /> Distance</p>
-          <p className="font-semibold text-gray-700 mt-0.5">{shop.distanceKm.toFixed(1)} km</p>
+          <p className="font-semibold text-gray-700 mt-0.5">
+            {shop.distanceKm > 0 ? `${shop.distanceKm.toFixed(1)} km` : '—'}
+          </p>
         </div>
         <div className="bg-gray-50 rounded-lg p-2">
           <p className="text-gray-400 flex items-center gap-1"><Star size={10} /> Rating</p>
-          <p className="font-semibold text-gray-700 mt-0.5">{shop.rating} ({shop.reviewCount} reviews)</p>
+          <p className="font-semibold text-gray-700 mt-0.5">
+            {shop.rating > 0 ? `${shop.rating} (${shop.reviewCount})` : '—'}
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-xs mb-4">
         <div className="bg-gray-50 rounded-lg p-2">
           <p className="text-gray-400">Last Delivery</p>
-          <p className="font-semibold text-gray-700 mt-0.5">{shop.lastDelivery}</p>
+          <p className="font-semibold text-gray-700 mt-0.5">{shop.lastDelivery || '—'}</p>
         </div>
         <div className={`rounded-lg p-2 ${shop.complaintCount > 5 ? 'bg-red-50' : 'bg-gray-50'}`}>
           <p className="text-gray-400 flex items-center gap-1">
@@ -188,21 +256,34 @@ function ShopCard({ shop, recommended }) {
         </div>
       </div>
 
-      <div className={`rounded-lg p-2 text-xs mb-4 ${shop.isOpen ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-        <p className="font-semibold flex items-center gap-1">
-          <Clock size={11} /> {shop.isOpen ? 'Open now' : 'Closed now'}
-        </p>
-        <p className="mt-0.5">{shop.timings}</p>
-      </div>
+      {shop.timings && (
+        <div className={`rounded-lg p-2 text-xs mb-4 ${shop.isOpen ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+          <p className="font-semibold flex items-center gap-1">
+            <Clock size={11} /> {shop.isOpen ? 'Open now' : 'Closed now'}
+          </p>
+          <p className="mt-0.5">{shop.timings}</p>
+        </div>
+      )}
 
-      <div className="mt-auto">
+      <div className="mt-auto flex gap-2">
         <Link
           to={`/shops/${shop.id}`}
           state={{ shop }}
-          className="w-full inline-flex items-center justify-center gap-1.5 bg-green-700 hover:bg-green-800 text-white text-sm font-medium py-2.5 rounded-xl transition-all"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 bg-green-700 hover:bg-green-800 text-white text-sm font-medium py-2.5 rounded-xl transition-all"
         >
           View Details <ArrowRight size={14} />
         </Link>
+        {shop.latitude && shop.longitude && (
+          <a
+            href={shop.mapsLink || `https://www.google.com/maps?q=${shop.latitude},${shop.longitude}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-10 h-10 flex items-center justify-center bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl transition-all"
+            title="Open in Maps"
+          >
+            <MapPin size={16} />
+          </a>
+        )}
       </div>
     </div>
   );

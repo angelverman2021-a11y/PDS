@@ -80,6 +80,77 @@ async function fetchOsm(pincode) {
   } catch { return null; }
 }
 
+// ── Haversine distance (km) ──────────────────────────────
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ── GET /api/v1/shops/nearby?lat=&lon=&radius=&limit= ─────
+router.get('/nearby', async (req, res) => {
+  const { lat, lon, radius = 10, limit = 20 } = req.query;
+  if (!lat || !lon) return res.status(400).json({ ok: false, error: 'lat and lon are required' });
+
+  const uLat = parseFloat(lat);
+  const uLon = parseFloat(lon);
+  const uRadius = Math.min(parseFloat(radius) || 10, 50);
+  const n = Math.min(parseInt(limit) || 20, 50);
+
+  if (isNaN(uLat) || isNaN(uLon)) return res.status(400).json({ ok: false, error: 'Invalid coordinates' });
+
+  // 1. Try OSM for real nearby shops
+  try {
+    const osmUrl = `${config.osmEndpoint}?q=${encodeURIComponent('ration shop fair price shop')}&format=jsonv2&limit=30&addressdetails=1&bounded=1` +
+      `&viewbox=${uLon - 0.15},${uLat + 0.15},${uLon + 0.15},${uLat - 0.15}`;
+    const osmRes = await fetch(osmUrl, { headers: { 'Accept-Language': 'en', 'User-Agent': 'PDS-Platform/1.0' } });
+    if (osmRes.ok) {
+      const data = await osmRes.json();
+      if (Array.isArray(data) && data.length) {
+        const shops = data
+          .map(p => ({
+            id: `osm_${p.osm_id || p.place_id}`,
+            fpsId: `OSM-${p.osm_id || p.place_id}`,
+            name: p.display_name.split(',')[0] || 'Ration Shop',
+            address: p.display_name,
+            phone: 'Not available',
+            rating: 4.0, reviewCount: 0, isOpen: true,
+            stockStatus: STOCK_STATUS.AVAILABLE,
+            latitude: parseFloat(p.lat), longitude: parseFloat(p.lon),
+            mapsLink: `https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lon}#map=18/${p.lat}/${p.lon}`,
+            lastDelivery: 'Live via OpenStreetMap', complaintCount: 0,
+            totalBeneficiaries: 0, timings: 'Check with shop directly',
+            distanceKm: Math.round(haversineKm(uLat, uLon, parseFloat(p.lat), parseFloat(p.lon)) * 10) / 10,
+            dealerName: 'N/A', pincode: p.address?.postcode || '', district: p.address?.county || p.address?.state || '',
+            licenseNo: '', reviewCount: 0,
+          }))
+          .filter(s => s.distanceKm <= uRadius)
+          .sort((a, b) => a.distanceKm - b.distanceKm)
+          .slice(0, n);
+        if (shops.length) return res.json({ ok: true, provider: 'osm', shops });
+      }
+    }
+  } catch { /* fall through to DB */ }
+
+  // 2. Fallback: DB shops with computed distance
+  const allDb = stmts.getAll.all().map(row => {
+    const s = rowToShop(row);
+    if (s.latitude && s.longitude) {
+      s.distanceKm = Math.round(haversineKm(uLat, uLon, s.latitude, s.longitude) * 10) / 10;
+    }
+    return s;
+  });
+  const nearby = allDb
+    .filter(s => s.distanceKm <= uRadius)
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, n);
+
+  res.json({ ok: true, provider: 'db', shops: nearby.length ? nearby : allDb.slice(0, n) });
+});
+
 // ── GET /api/v1/shops?pincode=411011&limit=10 ─────────────
 router.get('/', async (req, res) => {
   const { pincode, limit = 10 } = req.query;

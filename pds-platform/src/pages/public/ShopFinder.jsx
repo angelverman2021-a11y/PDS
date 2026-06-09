@@ -186,6 +186,40 @@ export default function ShopFinder() {
 
         {loading ? (
           <SkeletonShopGrid />
+        ) : serviceResult.source === 'maps_redirect' ? (
+          <div className="text-center py-16 px-4">
+            <Store size={48} className="mx-auto text-gray-300 mb-4" />
+            <p className="text-gray-700 font-semibold text-lg mb-1">
+              No registered FPS shops found for pincode {pincode}
+            </p>
+            {serviceResult.geo && (
+              <p className="text-gray-500 text-sm mb-6">
+                Pincode resolves to <strong>{serviceResult.geo.city}{serviceResult.geo.state ? `, ${serviceResult.geo.state}` : ''}</strong>.
+                No ration shop data is available in our database or OpenStreetMap for this area.
+              </p>
+            )}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {serviceResult.mapsSearchUrl && (
+                <a
+                  href={serviceResult.mapsSearchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all"
+                >
+                  <MapPin size={16} /> Search on Google Maps
+                </a>
+              )}
+              <button
+                onClick={() => { setServiceResult({ ok: true, shops: [], source: 'db' }); setMode('all'); fetchAllShops().then(s => setServiceResult({ ok: true, shops: s, source: 'db' })); }}
+                className="inline-flex items-center gap-2 border border-gray-200 bg-white text-gray-700 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-all"
+              >
+                View All Registered Shops
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-6 max-w-md mx-auto">
+              To add real shops for this pincode, configure a FPS dataset URL or Google Places API key in the backend .env file.
+            </p>
+          </div>
         ) : shops.length === 0 ? (
           <div className="text-center py-20">
             <Store size={48} className="mx-auto text-gray-300 mb-3" />

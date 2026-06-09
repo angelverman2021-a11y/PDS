@@ -59,26 +59,7 @@ async function fetchGooglePlaces(pincode) {
   } catch { return null; }
 }
 
-async function fetchOsm(pincode) {
-  try {
-    const url = `${config.osmEndpoint}?q=${encodeURIComponent(`ration shop ${pincode}`)}&format=jsonv2&limit=10&addressdetails=1`;
-    const res = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'PDS-Platform/1.0' } });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data) || !data.length) return null;
-    const shops = data.map(p => ({
-      id: String(p.place_id || p.osm_id), fpsId: String(p.osm_id || p.place_id),
-      name: p.display_name.split(',')[0] || 'Ration Shop', address: p.display_name,
-      phone: 'Not available', rating: 4.0, reviewCount: 10, isOpen: true,
-      stockStatus: STOCK_STATUS.AVAILABLE,
-      latitude: Number(p.lat), longitude: Number(p.lon),
-      mapsLink: `https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lon}#map=18/${p.lat}/${p.lon}`,
-      lastDelivery: 'Mapped via OSM', complaintCount: 0,
-      totalBeneficiaries: 0, distanceKm: 0, timings: 'Open now',
-    }));
-    return { provider: 'osm', shops };
-  } catch { return null; }
-}
+async function fetchOsm(_pincode) { return null; } // replaced by geocodePincode + fetchOsmByBoundingBox
 
 // ── Haversine distance (km) ──────────────────────────────
 function haversineKm(lat1, lon1, lat2, lon2) {
@@ -151,13 +132,59 @@ router.get('/nearby', async (req, res) => {
   res.json({ ok: true, provider: 'db', shops: nearby.length ? nearby : allDb.slice(0, n) });
 });
 
+// ── Geocode a pincode via OSM → { lat, lon, city, state } ─
+async function geocodePincode(pincode) {
+  try {
+    const url = `${config.osmEndpoint}?q=${pincode}&format=jsonv2&limit=1&addressdetails=1&countrycodes=in`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'PDS-Platform/1.0' } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) return null;
+    const p = data[0];
+    return {
+      lat: parseFloat(p.lat),
+      lon: parseFloat(p.lon),
+      city: p.address?.city || p.address?.county || p.address?.state_district || '',
+      state: p.address?.state || '',
+      boundingbox: p.boundingbox, // [minlat, maxlat, minlon, maxlon]
+    };
+  } catch { return null; }
+}
+
+async function fetchOsmByBoundingBox(bbox) {
+  try {
+    // bbox = [minlat, maxlat, minlon, maxlon]
+    const [minLat, maxLat, minLon, maxLon] = bbox.map(Number);
+    const url = `${config.osmEndpoint}?q=${encodeURIComponent('ration shop fair price shop FPS')}&format=jsonv2&limit=20&addressdetails=1&bounded=1&viewbox=${minLon},${maxLat},${maxLon},${minLat}&countrycodes=in`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'PDS-Platform/1.0' } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) return null;
+    return data.map(p => ({
+      id: `osm_${p.osm_id || p.place_id}`,
+      fpsId: `OSM-${p.osm_id || p.place_id}`,
+      name: p.display_name.split(',')[0] || 'Ration Shop',
+      address: [p.display_name.split(',').slice(0, 3).join(',')].join(''),
+      phone: 'Not available', rating: 0, reviewCount: 0, isOpen: true,
+      stockStatus: STOCK_STATUS.AVAILABLE,
+      latitude: parseFloat(p.lat), longitude: parseFloat(p.lon),
+      mapsLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.display_name.split(',')[0])}@${p.lat},${p.lon}`,
+      lastDelivery: 'Source: OpenStreetMap', complaintCount: 0,
+      totalBeneficiaries: 0, distanceKm: 0,
+      timings: 'Verify timings with shop directly',
+      dealerName: 'N/A', pincode: p.address?.postcode || '',
+      district: p.address?.county || p.address?.state_district || '',
+      licenseNo: '',
+    }));
+  } catch { return null; }
+}
+
 // ── GET /api/v1/shops?pincode=411011&limit=10 ─────────────
 router.get('/', async (req, res) => {
   const { pincode, limit = 10 } = req.query;
   const n = Math.min(parseInt(limit) || 10, 50);
 
   if (!pincode) {
-    // No pincode — return all shops from DB
     const shops = stmts.getAll.all().map(rowToShop);
     return res.json({ ok: true, provider: 'db', shops });
   }
@@ -166,20 +193,45 @@ router.get('/', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'PINCODE_INVALID' });
   }
 
-  // 1. Try external providers first (real data)
-  const external =
-    (await fetchFpsDataset(pincode)) ||
-    (await fetchGooglePlaces(pincode)) ||
-    (await fetchOsm(pincode));
+  // 1. FPS dataset (if configured)
+  const fps = await fetchFpsDataset(pincode);
+  if (fps) return res.json({ ok: true, pincode, provider: fps.provider, shops: fps.shops.slice(0, n) });
 
-  if (external) {
-    return res.json({ ok: true, pincode, provider: external.provider, shops: external.shops.slice(0, n) });
+  // 2. Google Places (if API key configured)
+  const google = await fetchGooglePlaces(pincode);
+  if (google) return res.json({ ok: true, pincode, provider: google.provider, shops: google.shops.slice(0, n) });
+
+  // 3. Geocode pincode → get real coordinates + bounding box
+  const geo = await geocodePincode(pincode);
+
+  if (geo) {
+    // 3a. Try OSM bounded search inside that pincode's bounding box
+    const osmShops = await fetchOsmByBoundingBox(geo.boundingbox);
+    if (osmShops && osmShops.length) {
+      // Compute real distances from pincode centroid
+      osmShops.forEach(s => {
+        s.distanceKm = Math.round(haversineKm(geo.lat, geo.lon, s.latitude, s.longitude) * 10) / 10;
+      });
+      osmShops.sort((a, b) => a.distanceKm - b.distanceKm);
+      return res.json({ ok: true, pincode, provider: 'osm', geo, shops: osmShops.slice(0, n) });
+    }
+
+    // 3b. OSM has no shops in this pincode — return geo info + Google Maps search link
+    // so frontend can show the correct city and a useful fallback
+    return res.json({
+      ok: true, pincode, provider: 'maps_redirect', shops: [],
+      geo,
+      mapsSearchUrl: `https://www.google.com/maps/search/ration+shop/@${geo.lat},${geo.lon},14z`,
+    });
   }
 
-  // 2. Fallback: query DB by pincode, else return all DB shops
+  // 4. Pincode geocoding failed — check DB by pincode
   const byPincode = stmts.getByPincode.all(String(pincode)).map(rowToShop);
-  const fallback  = byPincode.length ? byPincode : stmts.getAll.all().map(rowToShop);
-  return res.json({ ok: true, pincode, provider: 'db', shops: fallback.slice(0, n) });
+  if (byPincode.length) return res.json({ ok: true, pincode, provider: 'db', shops: byPincode });
+
+  // 5. Nothing found at all
+  return res.json({ ok: false, pincode, provider: 'none', shops: [],
+    message: 'No shops found for this pincode. No FPS dataset or map provider is configured.' });
 });
 
 // ── GET /api/v1/shops/:id ─────────────────────────────────

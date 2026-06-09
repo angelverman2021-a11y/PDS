@@ -74,7 +74,11 @@ export async function searchShopsByPincode({ pincode, userLocation, limit = 10 }
   try {
     const res = await fetch(`${BASE}?pincode=${encodeURIComponent(pincode)}&limit=${limit}`);
     const data = await res.json();
-    if (!data.ok) return { ok: false, error: data.error || 'SHOP_FETCH_FAILED', shops: [] };
+    if (!data.ok && data.provider !== 'maps_redirect') return { ok: false, error: data.error || 'SHOP_FETCH_FAILED', shops: [] };
+
+    if (data.provider === 'maps_redirect') {
+      return { ok: true, pincode, source: 'maps_redirect', shops: [], geo: data.geo, mapsSearchUrl: data.mapsSearchUrl };
+    }
 
     const origin = userLocation ?? PINCODE_COORDINATES[Number(pincode)];
     const shops = data.shops

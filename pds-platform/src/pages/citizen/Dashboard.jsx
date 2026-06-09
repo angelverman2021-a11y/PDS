@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import {
   FileText, QrCode, AlertTriangle, Store,
   Package, Clock, TrendingUp,
-  ArrowRight, ShieldCheck, ClipboardList,
+  ArrowRight, ShieldCheck, ClipboardList, LocateFixed,
 } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
-import { computeAllocation, ALLOCATION_STATUS } from '../../constants';
+import { computeAllocation, ALLOCATION_STATUS, MOCK_SHOPS } from '../../constants';
 import { fetchCitizenReceipts } from '../../services/receiptService';
 import { fetchShopById } from '../../services/shopService';
 import Badge from '../../components/common/Badge';
@@ -39,12 +39,16 @@ export default function CitizenDashboard() {
 
   useEffect(() => {
     if (!user) return;
+    const mockFallback = MOCK_SHOPS.find(s => s.id === user.shopId) ?? null;
     Promise.all([
       fetchCitizenReceipts(user.id),
       fetchShopById(user.shopId),
     ]).then(([r, s]) => {
       setReceipts(r);
-      setShop(s);
+      setShop(s ?? mockFallback);
+      setLoading(false);
+    }).catch(() => {
+      setShop(mockFallback);
       setLoading(false);
     });
   }, [user]);
@@ -159,6 +163,22 @@ export default function CitizenDashboard() {
                 </Link>
               );
             })}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <LocateFixed size={18} className="text-green-600" /> Find Nearby Ration Shops
+              </p>
+              <p className="text-xs text-gray-500 mt-2 max-w-2xl">
+                Use your device location to discover registered FPS shops near you, sorted by distance.
+              </p>
+            </div>
+            <Link to="/shops" className="inline-flex items-center gap-2 rounded-2xl bg-green-700 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-green-500/10 hover:bg-green-800 transition shrink-0">
+              Open Shop Finder <ArrowRight size={14} />
+            </Link>
           </div>
         </Card>
 
